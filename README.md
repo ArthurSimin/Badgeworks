@@ -2,6 +2,8 @@
 
 > Create pixel-perfect, customizable badges in the official `@intergrav/devins-badges` style — right in your browser!
 
+Try the live website: [arthursimin.github.io/Devin-badge-studio](https://arthursimin.github.io/Devin-badge-studio/)
+
 > This website is entirely made by AI. Please do not start a annoying discussion just because it's made with AI
 
 ![Devin Badge Studio](https://img.shields.io/badge/Devin's-Badge_Studio-00d2ff?style=for-the-badge&logo=github)
@@ -39,6 +41,8 @@
   - Export ultra crisp 3× high-resolution PNG (`.png`) images
 
 ## Quick Start
+
+You can use the live website directly at [arthursimin.github.io/Devin-badge-studio](https://arthursimin.github.io/Devin-badge-studio/), or run it locally:
 
 1. Clone or download this repository:
    ```bash
