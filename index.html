@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Devin's Badge Generator</title>
+  <meta name="description" content="Create pixel-perfect Devin-style badges with custom PNG & SVG logo upload, exact typography, pure standalone logos, and dynamic text padding.">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="2" y="4" width="20" height="16" rx="5"/>
+            <circle cx="8" cy="12" r="3" fill="currentColor"/>
+            <path d="M13 10h5M13 14h3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Devin's Badge Studio</h1>
+          <p>Pure Vector & Image Badge Generator</p>
+        </div>
+      </div>
+
+      <!-- Presets & Actions Bar -->
+      <div class="presets-bar">
+        <button class="action-btn" onclick="saveConfigToLocalStorage()" title="Save preset to browser memory">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save
+        </button>
+        <button class="action-btn" onclick="loadConfigFromLocalStorage()" title="Load preset from browser memory">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Load
+        </button>
+        <button class="action-btn" onclick="exportConfigJSON()" title="Export JSON config file">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Export JSON
+        </button>
+        <button class="action-btn" onclick="document.getElementById('config-file-input').click()" title="Import JSON config file">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          Import JSON
+        </button>
+        <input type="file" id="config-file-input" accept=".json" style="display: none;" onchange="importConfigJSON(event)">
+        
+        <span class="presets-divider">|</span>
+        <span class="presets-label">Presets:</span>
+        <button class="preset-pill" onclick="applyPreset('github')">GitHub</button>
+        <button class="preset-pill" onclick="applyPreset('discord')">Discord</button>
+        <button class="preset-pill" onclick="applyPreset('python')">Python</button>
+        <button class="preset-pill" onclick="applyPreset('react')">React</button>
+        <button class="preset-pill" onclick="applyPreset('vscode')">VS Code</button>
+        <button class="preset-pill" onclick="applyPreset('pypi')">PyPI</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Generator Container -->
+  <main class="app-main">
+    <div class="studio-grid">
+
+      <!-- LEFT: CONTROLS PANEL -->
+      <div class="controls-panel">
+        
+        <!-- Style Variant Selector -->
+        <div class="panel-section">
+          <div class="section-header">
+            <span class="section-title">1. Badge Style Variant</span>
+          </div>
+          <div class="style-cards">
+            <button class="style-option active" data-style="cozy" onclick="setStyle('cozy')">
+              <div class="style-option-head">
+                <span class="style-title">Cozy</span>
+                <span class="style-badge">56px</span>
+              </div>
+              <span class="style-sub">Full 2-line text & logo</span>
+            </button>
+            <button class="style-option" data-style="compact" onclick="setStyle('compact')">
+              <div class="style-option-head">
+                <span class="style-title">Compact</span>
+                <span class="style-badge">40px</span>
+              </div>
+              <span class="style-sub">Single-line text & logo</span>
+            </button>
+            <button class="style-option" data-style="cozy-minimal" onclick="setStyle('cozy-minimal')">
+              <div class="style-option-head">
+                <span class="style-title">Cozy Minimal</span>
+                <span class="style-badge">56px</span>
+              </div>
+              <span class="style-sub">Large icon only</span>
+            </button>
+            <button class="style-option" data-style="compact-minimal" onclick="setStyle('compact-minimal')">
+              <div class="style-option-head">
+                <span class="style-title">Compact Minimal</span>
+                <span class="style-badge">40px</span>
+              </div>
+              <span class="style-sub">Small icon only</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Typography Section & Text FX -->
+        <div class="panel-section">
+          <div class="section-header">
+            <span class="section-title">2. Text Content & Text FX</span>
+          </div>
+          <div class="grid-2col">
+            <div class="field-group">
+              <label for="top-text">Top Text (Subtitle)</label>
+              <input type="text" id="top-text" class="input-text" value="Available on" oninput="renderBadge()">
+            </div>
+            <div class="field-group">
+              <label for="bottom-text">Bottom Text (Main Title)</label>
+              <input type="text" id="bottom-text" class="input-text" value="GitHub" oninput="renderBadge()">
+            </div>
+          </div>
+
+          <!-- Text FX: Gradients & Stroke Outline -->
+          <div class="grid-2col" style="margin-top: 0.75rem;">
+            <div class="field-group checkbox-field">
+              <label><input type="checkbox" id="text-grad-toggle" onchange="renderBadge()"> Text Gradient</label>
+            </div>
+            <div class="field-group checkbox-field">
+              <label><input type="checkbox" id="text-stroke-toggle" onchange="renderBadge()"> Text Outline / Stroke</label>
+            </div>
+          </div>
+
+          <div class="grid-4col" style="margin-top: 0.45rem;">
+            <div class="field-group">
+              <label for="text-grad-top">Grad Top</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="text-grad-top" value="#61DAFB" onchange="renderBadge()">
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="text-grad-bot">Grad Bot</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="text-grad-bot" value="#FFFFFF" onchange="renderBadge()">
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="text-stroke-color">Text Stroke</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="text-stroke-color" value="#000000" onchange="renderBadge()">
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="text-stroke-width">Width: <span id="text-stroke-val" class="slider-num">1.5px</span></label>
+              <input type="range" id="text-stroke-width" min="0.5" max="4" step="0.5" value="1.5" class="range-slider" oninput="renderBadge()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Logo & Icon Upload Section -->
+        <div class="panel-section">
+          <div class="section-header">
+            <span class="section-title">3. Logo & Icon Upload (PNG, JPG, SVG)</span>
+          </div>
+
+          <!-- Icon Source Segmented Tabs -->
+          <div class="segmented-control">
+            <button class="seg-btn active" id="seg-preset" onclick="setIconMode('preset')">Preset Icons</button>
+            <button class="seg-btn" id="seg-upload" onclick="setIconMode('upload')">Upload Image / SVG</button>
+            <button class="seg-btn" id="seg-raw" onclick="setIconMode('raw')">Paste SVG Code</button>
+          </div>
+
+          <!-- Mode 1: Preset Icons -->
+          <div id="icon-mode-preset" class="mode-container">
+            <select id="preset-select" class="input-text" onchange="renderBadge()">
+              <option value="github">GitHub Octocat</option>
+              <option value="discord">Discord</option>
+              <option value="python">Python</option>
+              <option value="react">React</option>
+              <option value="vscode">VS Code</option>
+              <option value="npm">npm</option>
+              <option value="pypi">PyPI</option>
+              <option value="docker">Docker</option>
+              <option value="deno">Deno</option>
+              <option value="rust">Rust</option>
+              <option value="git">Git</option>
+              <option value="steam">Steam</option>
+              <option value="spotify">Spotify</option>
+              <option value="youtube">YouTube</option>
+              <option value="twitter">X / Twitter</option>
+              <option value="star">Star</option>
+              <option value="terminal">Terminal</option>
+            </select>
+          </div>
+
+          <!-- Mode 2: Upload File (PNG, JPG, SVG) -->
+          <div id="icon-mode-upload" class="mode-container" style="display: none;">
+            <div class="dropzone" id="image-dropzone" onclick="document.getElementById('file-input').click()">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <span id="upload-status-text">Click to upload PNG, JPG, or SVG logo</span>
+              <span class="upload-hint">Supported formats: .png, .jpg, .jpeg, .webp, .svg</span>
+              <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.webp,.svg" style="display: none;" onchange="handleFileChange(event)">
+            </div>
+            
+            <div id="upload-preview-bar" class="upload-preview-bar" style="display: none;">
+              <img id="upload-thumb" src="" alt="Thumbnail" class="upload-thumb">
+              <span id="upload-filename" class="upload-filename">logo.png</span>
+              <button class="remove-upload-btn" onclick="clearUpload()">&times;</button>
+            </div>
+          </div>
+
+          <!-- Mode 3: Paste Raw SVG Code -->
+          <div id="icon-mode-raw" class="mode-container" style="display: none;">
+            <textarea id="raw-svg-code" class="input-text textarea-code" placeholder="Paste <svg>...</svg> code here..." oninput="handleRawSvgChange()"></textarea>
+          </div>
+
+          <!-- Icon & Disk Size Sliders -->
+          <div class="grid-2col" style="margin-top: 0.85rem;">
+            <div class="field-group">
+              <label for="icon-scale-slider">Pure Logo Size: <span id="icon-scale-num" class="slider-num">34px</span></label>
+              <input type="range" id="icon-scale-slider" min="16" max="44" value="34" class="range-slider" oninput="renderBadge()">
+            </div>
+            <div class="field-group">
+              <label for="disk-size-slider">Circle Disk Size (Optional): <span id="disk-size-num" class="slider-num">40px</span></label>
+              <input type="range" id="disk-size-slider" min="24" max="48" value="40" class="range-slider" oninput="renderBadge()">
+            </div>
+          </div>
+
+          <!-- Optional Disk, Logo Color & Stroke Customization -->
+          <div class="grid-3col" style="margin-top: 0.85rem;">
+            <div class="field-group checkbox-field">
+              <label><input type="checkbox" id="show-disk-toggle" onchange="renderBadge()"> White Circle Disk</label>
+            </div>
+            <div class="field-group checkbox-field">
+              <label><input type="checkbox" id="custom-logo-color-toggle" onchange="renderBadge()"> Custom Logo Color</label>
+            </div>
+            <div class="field-group checkbox-field">
+              <label><input type="checkbox" id="logo-stroke-toggle" onchange="renderBadge()"> Logo Outline / Stroke</label>
+            </div>
+          </div>
+          <div class="grid-4col" style="margin-top: 0.45rem;">
+            <div class="field-group">
+              <label for="disk-color">Disk Color</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="disk-color" value="#ffffff" onchange="renderBadge()">
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="logo-color">Logo Color</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="logo-color" value="#ffffff" onchange="renderBadge()">
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="logo-stroke-color">Logo Stroke</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="logo-stroke-color" value="#ffffff" onchange="renderBadge()">
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="logo-stroke-width">Width: <span id="logo-stroke-val" class="slider-num">2px</span></label>
+              <input type="range" id="logo-stroke-width" min="1" max="6" step="0.5" value="2" class="range-slider" oninput="renderBadge()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Color Palette & Dimensions -->
+        <div class="panel-section">
+          <div class="section-header">
+            <span class="section-title">4. Background & Dimensions</span>
+          </div>
+
+          <div class="grid-3col">
+            <div class="field-group">
+              <label for="bg-color-top">Bg Top Color</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="bg-color-top" value="#181f29" onchange="renderBadge()">
+                <span class="color-val" id="bg-top-hex">#181f29</span>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="bg-color-bottom">Bg Bottom Color</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="bg-color-bottom" value="#0f131a" onchange="renderBadge()">
+                <span class="color-val" id="bg-bot-hex">#0f131a</span>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="text-color">Logo & Text Color</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="text-color" value="#ffffff" onchange="renderBadge()">
+                <span class="color-val" id="text-hex">#ffffff</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid-2col" style="margin-top: 0.85rem;">
+            <div class="field-group">
+              <label for="corner-radius">Border Radius: <span id="radius-val" class="slider-num">8px</span></label>
+              <input type="range" id="corner-radius" min="0" max="24" value="8" class="range-slider" oninput="renderBadge()">
+            </div>
+            <div class="field-group">
+              <label for="padding-horizontal">Right Padding: <span id="padding-val" class="slider-num">16px</span></label>
+              <input type="range" id="padding-horizontal" min="8" max="32" value="16" class="range-slider" oninput="renderBadge()">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: STAGE PREVIEW & EXPORT -->
+      <div class="preview-panel">
+        <div class="stage-card">
+          <div class="stage-header">
+            <h3>Live Preview</h3>
+            <span class="dimension-badge" id="badge-size-display">164 × 56 px</span>
+          </div>
+
+          <!-- SVG Canvas Stage -->
+          <div class="badge-stage" id="badge-stage">
+            <!-- Rendered SVG will be placed here -->
+          </div>
+
+          <!-- Export Buttons -->
+          <div class="export-buttons">
+            <button class="btn btn-primary" onclick="downloadSVG()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download SVG
+            </button>
+            <button class="btn btn-secondary" onclick="downloadPNG()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Download PNG
+            </button>
+          </div>
+        </div>
+
+        <!-- Code Snippet Output Box -->
+        <div class="code-card">
+          <div class="code-card-header">
+            <div class="code-tabs">
+              <button class="code-tab active" id="codetab-md" onclick="setCodeTab('md')">Markdown</button>
+              <button class="code-tab" id="codetab-html" onclick="setCodeTab('html')">HTML</button>
+              <button class="code-tab" id="codetab-svg" onclick="setCodeTab('svg')">SVG Code</button>
+            </div>
+            <button class="copy-code-btn" onclick="copyCode()">Copy Code</button>
+          </div>
+
+          <div class="code-display">
+            <pre><code id="snippet-output">![GitHub](devin_badge.svg)</code></pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
