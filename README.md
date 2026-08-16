@@ -2,7 +2,7 @@
 
 > Create pixel-perfect, customizable badges in the official `@intergrav/devins-badges` style — right in your browser!
 
-Try the live website: [arthursimin.github.io/Devin-badge-studio](https://arthursimin.github.io/Devin-badge-studio/)
+Try the live website: [arthursimin.github.io/Devin-Badge-Generator](https://arthursimin.github.io/Devin-Badge-Generator/)
 
 > This website is entirely made by AI. Please do not start a annoying discussion just because it's made with AI
 
