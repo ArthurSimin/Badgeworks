@@ -19,7 +19,7 @@ const state = {
   bgColorBottom: '#0f131a',
   textColor: '#ffffff',
   radius: 8,
-  paddingRight: 16,
+  paddingRight: 8,
   codeTab: 'md' // 'md' | 'html' | 'svg'
 };
 
@@ -27,7 +27,7 @@ const state = {
 const OFFICIAL_BRAND_ICONS = {
   github: {
     isCustomSvg: true,
-    svg: `<path fill="#ffffff" d="M32.001 8.716C20.951 8.716 12 17.573 12 28.488c0 8.741 5.73 16.15 13.672 18.763 1.004.187 1.366-.425 1.366-.954 0-.47-.01-1.711-.018-3.36-5.567 1.192-6.74-2.658-6.74-2.658-.91-2.279-2.226-2.89-2.226-2.89-1.81-1.223.144-1.197.144-1.197 2.005.135 3.06 2.033 3.06 2.033 1.784 3.025 4.68 2.15 5.827 1.641.175-1.274.696-2.15 1.264-2.638-4.44-.496-9.11-2.195-9.11-9.772 0-2.163.775-3.926 2.057-5.31-.222-.495-.9-2.51.176-5.233 0 0 1.674-.528 5.5 2.027a19.5 19.5 0 0 1 5-.668c1.7.011 3.4.231 5 .669 3.805-2.556 5.477-2.028 5.477-2.028 1.074 2.723.397 4.736.202 5.233 1.268 1.384 2.044 3.148 2.044 5.31 0 7.594-4.676 9.269-9.121 9.752.695.592 1.346 1.81 1.346 3.657 0 2.644-.025 4.775-.025 5.419 0 .514.35 1.132 1.38.933C46.275 44.63 52 37.216 52 28.487c0-10.916-8.952-19.773-20.001-19.773z"/>`,
+    svg: `<path fill="#ffffff" d="M32.001 12.716C20.951 12.716 12 21.573 12 32.488c0 8.741 5.73 16.15 13.672 18.763 1.004.187 1.366-.425 1.366-.954 0-.47-.01-1.711-.018-3.36-5.567 1.192-6.74-2.658-6.74-2.658-.91-2.279-2.226-2.89-2.226-2.89-1.81-1.223.144-1.197.144-1.197 2.005.135 3.06 2.033 3.06 2.033 1.784 3.025 4.68 2.15 5.827 1.641.175-1.274.696-2.15 1.264-2.638-4.44-.496-9.11-2.195-9.11-9.772 0-2.163.775-3.926 2.057-5.31-.222-.495-.9-2.51.176-5.233 0 0 1.674-.528 5.5 2.027a19.5 19.5 0 0 1 5-.668c1.7.011 3.4.231 5 .669 3.805-2.556 5.477-2.028 5.477-2.028 1.074 2.723.397 4.736.202 5.233 1.268 1.384 2.044 3.148 2.044 5.31 0 7.594-4.676 9.269-9.121 9.752.695.592 1.346 1.81 1.346 3.657 0 2.644-.025 4.775-.025 5.419 0 .514.35 1.132 1.38.933C46.275 48.63 52 41.216 52 32.487c0-10.916-8.952-19.773-20.001-19.773z"/>`,
     textX: 62,
     color: '#ffffff',
     bgTop: '#181f29',
@@ -36,10 +36,10 @@ const OFFICIAL_BRAND_ICONS = {
   python: {
     isCustomSvg: true,
     svg: `
-      <path fill="#306998" d="M31.762 8a28 28 0 0 0-4.61.39c-4.083.713-4.825 2.206-4.825 4.96v3.637h9.648v1.212H18.708c-2.805 0-5.26 1.667-6.028 4.838-.886 3.635-.925 5.904 0 9.699.686 2.825 2.324 4.838 5.128 4.838h3.317v-4.36c0-3.15 2.756-5.928 6.028-5.928h9.636c2.683 0 4.824-2.185 4.824-4.85V13.35c0-2.586-2.205-4.529-4.824-4.96A30.4 30.4 0 0 0 31.762 8m-5.218 2.925c.997 0 1.81.818 1.81 1.824a1.81 1.81 0 1 1-3.62 0c0-1.005.81-1.824 1.81-1.824"/>
-      <path fill="#FFE873" d="M42.816 18.2v4.237c0 3.285-2.816 6.05-6.028 6.05h-9.636c-2.64 0-4.825 2.235-4.825 4.85v9.086c0 2.586 2.274 4.107 4.824 4.85 3.055.887 5.983 1.048 9.637 0 2.43-.696 4.824-2.096 4.824-4.85v-3.637h-9.637v-1.212h14.462c2.803 0 3.848-1.935 4.824-4.838 1.007-2.99.964-5.864 0-9.699-.693-2.76-2.017-4.838-4.824-4.838zm-5.42 23.01c1 0 1.81.811 1.81 1.814 0 1.006-.81 1.824-1.81 1.824a1.82 1.82 0 0 1-1.81-1.824c0-1.003.813-1.813 1.81-1.813"/>
+      <path fill="#306998" d="M31.762 12a28 28 0 0 0-4.61.39c-4.083.713-4.825 2.206-4.825 4.96v3.637h9.648v1.212H18.708c-2.805 0-5.26 1.667-6.028 4.838-.886 3.635-.925 5.904 0 9.699.686 2.825 2.324 4.838 5.128 4.838h3.317v-4.36c0-3.15 2.756-5.928 6.028-5.928h9.636c2.683 0 4.824-2.185 4.824-4.85V17.35c0-2.586-2.205-4.529-4.824-4.96A30.4 30.4 0 0 0 31.762 12m-5.218 2.925c.997 0 1.81.818 1.81 1.824a1.81 1.81 0 1 1-3.62 0c0-1.005.81-1.824 1.81-1.824"/>
+      <path fill="#FFE873" d="M42.816 22.2v4.237c0 3.285-2.816 6.05-6.028 6.05h-9.636c-2.64 0-4.825 2.235-4.825 4.85v9.086c0 2.586 2.274 4.107 4.824 4.85 3.055.887 5.983 1.048 9.637 0 2.43-.696 4.824-2.096 4.824-4.85v-3.637h-9.637v-1.212h14.462c2.803 0 3.848-1.935 4.824-4.838 1.007-2.99.964-5.864 0-9.699-.693-2.76-2.017-4.838-4.824-4.838zm-5.42 23.01c1 0 1.81.811 1.81 1.814 0 1.006-.81 1.824-1.81 1.824a1.82 1.82 0 0 1-1.81-1.824c0-1.003.813-1.813 1.81-1.813"/>
     `,
-    textX: 54,
+    textX: 62,
     color: '#FFE873',
     bgTop: '#152b3e',
     bgBot: '#282208'
@@ -57,14 +57,25 @@ const OFFICIAL_BRAND_ICONS = {
     bgBot: "#11121d"
   },
   react: {
-    path: "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0-7c-4.97 0-9 1.79-9 4s4.03 4 9 4 9-1.79 9-4-4.03-4-9-4zm0 6c-3.86 0-7-1.34-7-2s3.14-2 7-2 7 1.34 7 2-3.14 2-7 2zm-5.7 7.78c-3.79-3.21-5.8-6.49-4.49-7.3 1.31-.81 5.4 1.13 9.19 4.34 3.79 3.21 5.8 6.49 4.49 7.3-1.31.81-5.4-1.13-9.19-4.34zm.9-1.56c2.89 2.45 6.02 3.86 7 3.25.98-.61-.31-3.27-3.2-5.72-2.89-2.45-6.02-3.86-7-3.25-.98.61.31 3.27 3.2 5.72zm9.6 1.56c-3.79 3.21-7.88 5.15-9.19 4.34-1.31-.81.7-4.09 4.49-7.3 3.79-3.21 7.88-5.15 9.19-4.34 1.31.81-.7 4.09-4.49 7.3zm-.9-1.56c-2.89-2.45-5.91-6.33-6.89-6.94-.98-.61-3.89.8-1 3.25 2.89 2.45 5.91 6.33 6.89 6.94.98.61 3.89-.8 1-3.25z",
-    color: "#61DAFB",
-    bgTop: "#132230",
-    bgBot: "#0b1620"
+    isCustomSvg: true,
+    svg: `
+      <g transform="translate(32, 32) scale(1.5)">
+        <circle cx="0" cy="0" r="2.05" fill="#61dafb"/>
+        <g stroke="#61dafb" stroke-width="1" fill="none">
+          <ellipse rx="11" ry="4.2"/>
+          <ellipse rx="11" ry="4.2" transform="rotate(60)"/>
+          <ellipse rx="11" ry="4.2" transform="rotate(120)"/>
+        </g>
+      </g>
+    `,
+    textX: 62,
+    color: '#61DAFB',
+    bgTop: '#132230',
+    bgBot: '#0b1620'
   },
   docker: {
-    path: "M13.98 11.08h2.12v2.12h-2.12zm-3.18 0h2.12v2.12h-2.12zm-3.18 0h2.12v2.12H7.62zm-3.18 0h2.12v2.12H4.44zm6.36-3.18h2.12v2.12h-2.12zm-3.18 0h2.12v2.12H7.62zm-3.18 0h2.12v2.12H4.44zm6.36-3.18h2.12v2.12h-2.12zm9.22 8.78c-.46-.32-1.36-.45-2.22-.24-.26-.84-.96-1.57-1.89-1.84l-.38-.11v2.96c0 .32.26.58.58.58h1.16c.38 0 .66.3.66.68 0 .42-.3.72-.72.72H1.5c.08.62.38 3.5 3.02 5.06 2.06 1.22 4.78 1.38 7.46.46 3.12-1.07 5.02-3.85 5.04-7.01.99.1 1.76-.23 2.04-.64.12-.17.18-.38.16-.62z",
-    color: "#2496ED",
+    path: "M6.94221099,14.9002344 C6.9980621,14.9002344 7.05128211,14.9107588 7.10043586,14.9297745 C7.04721586,14.9606302 7.01109801,15.018335 7.01109801,15.0842919 C7.01109801,15.1828984 7.09098782,15.2626686 7.18959432,15.2626686 C7.25710599,15.2626686 7.31570779,15.2251754 7.34608506,15.1698027 C7.36743286,15.2214082 7.37939241,15.2780367 7.37939241,15.3374756 C7.37939241,15.578939 7.18361455,15.774657 6.94221099,15.774657 C6.70080744,15.774657 6.50496978,15.578939 6.50496978,15.3374756 C6.50496978,15.0959525 6.70080744,14.9002344 6.94221099,14.9002344 L6.94221099,14.9002344 Z M6.94221099,16.0853662 C6.52978585,16.0853662 6.19420083,15.7499008 6.19420083,15.3374756 C6.19420083,14.9250505 6.52978585,14.5895253 6.94221099,14.5895253 C7.35457634,14.5895253 7.69010156,14.9250505 7.69010156,15.3374756 C7.69010156,15.7499008 7.35457634,16.0853662 6.94221099,16.0853662 L6.94221099,16.0853662 Z M20.3859431,11.1838037 C18.2619865,16.8117894 13.4653093,19.318631 7.81023526,19.318631 C5.13823222,19.318631 3.00656172,18.3995992 1.64323262,16.8672219 L1.65327865,16.8605843 C2.04609012,16.880497 2.39758135,16.8872541 2.75439457,16.8872541 C3.08065114,16.8872541 3.39979178,16.8838457 3.6953721,16.8672219 C3.72108514,16.8657867 3.75325633,16.8621989 3.77878997,16.8605843 C3.77902916,16.8605245 3.86998155,16.8546046 3.82549202,16.853887 C4.57667146,16.8075437 5.15892224,16.7031368 5.70188589,16.5482008 C5.70200548,16.548141 5.70212508,16.548141 5.70224467,16.5480812 C5.80091098,16.5198567 5.89658739,16.4901372 5.98825735,16.4583846 C6.09081051,16.4228049 6.14510687,16.3108635 6.109587,16.2083104 C6.07406714,16.1056974 5.96218553,16.0512815 5.85957258,16.0869807 C5.16992503,16.3259326 4.26010213,16.4574876 3.14505333,16.4821841 L3.14475434,16.4821841 C2.57739321,16.4947416 1.95717085,16.4797922 1.28450587,16.4365584 L1.28444607,16.4365584 C1.14529669,16.2507668 1.01649231,16.0576798 0.89869073,15.8577161 L0.71248051,15.5172277 C0.149903198,14.4112083 -0.0964037696,13.1191582 0.0343141305,11.7160038 L16.3965356,11.7160038 C17.7407294,11.7160038 19.0534696,11.2143604 19.6764427,10.6609919 C18.5601381,9.75332174 18.670764,7.59731356 19.3822377,6.774616 C19.9997093,7.270758 20.9954018,8.31584342 20.824141,9.64622396 C21.6011531,9.255625 22.9506091,9.06259783 24,9.66816973 C23.3411483,10.9541803 21.8929064,11.3383809 20.3859431,11.1838037 L20.3859431,11.1838037 Z M2.25508329,11.3188869 L4.46771995,11.3188869 L4.46771995,9.1061306 L2.25508329,9.1061306 L2.25508329,11.3188869 Z M4.80808879,11.3188869 L7.02096464,11.3188869 L7.02096464,9.1061306 L4.80808879,9.1061306 L4.80808879,11.3188869 Z M4.80808879,8.76576176 L7.02096464,8.76576176 L7.02096464,6.5530653 L4.80808879,6.5530653 L4.80808879,8.76576176 Z M7.36127369,11.3188869 L9.57402994,11.3188869 L9.57402994,9.1061306 L7.36127369,9.1061306 L7.36127369,11.3188869 Z M7.36127369,8.76576176 L9.57402994,8.76576176 L9.57402994,6.5530653 L7.36127369,6.5530653 L7.36127369,8.76576176 Z M9.91433899,11.3188869 L12.1270952,11.3188869 L12.1270952,9.1061306 L9.91433899,9.1061306 L9.91433899,11.3188869 Z M9.91433899,8.76576176 L12.1270952,8.76576176 L12.1270952,6.5530653 L9.91433899,6.5530653 L9.91433899,8.76576176 Z M9.91433899,6.21275626 L12.1270952,6.21275626 L12.1270952,4 L9.91433899,4 L9.91433899,6.21275626 Z M12.4674043,11.3188869 L14.6801605,11.3188869 L14.6801605,9.1061306 L12.4674043,9.1061306 L12.4674043,11.3188869 Z",
+    color: "#0DB7ED",
     bgTop: "#122536",
     bgBot: "#0b1622"
   },
@@ -144,7 +155,15 @@ const OFFICIAL_BRAND_ICONS = {
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
-  renderBadge();
+  // Wait for fonts to load before initial render
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      renderBadge();
+    });
+  } else {
+    // Fallback if Font Loading API is not available
+    setTimeout(renderBadge, 100);
+  }
 });
 
 // Set Active Style Variant
@@ -160,15 +179,43 @@ function setStyle(styleName) {
 function setIconMode(mode) {
   state.iconMode = mode;
   document.getElementById('seg-preset').classList.toggle('active', mode === 'preset');
+  document.getElementById('seg-fontawesome').classList.toggle('active', mode === 'fontawesome');
   document.getElementById('seg-upload').classList.toggle('active', mode === 'upload');
   document.getElementById('seg-raw').classList.toggle('active', mode === 'raw');
 
   document.getElementById('icon-mode-preset').style.display = mode === 'preset' ? 'block' : 'none';
+  document.getElementById('icon-mode-fontawesome').style.display = mode === 'fontawesome' ? 'block' : 'none';
   document.getElementById('icon-mode-upload').style.display = mode === 'upload' ? 'block' : 'none';
   document.getElementById('icon-mode-raw').style.display = mode === 'raw' ? 'block' : 'none';
 
+  // Update FontAwesome preview
+  if (mode === 'fontawesome') {
+    updateFontAwesomePreview();
+  }
+
   renderBadge();
 }
+
+function updateFontAwesomePreview() {
+  const faInput = document.getElementById('fa-icon-input');
+  const faPreview = document.getElementById('fa-preview');
+  
+  if (faInput && faPreview) {
+    const iconClass = faInput.value || 'fa-brands fa-github';
+    const iconElement = faPreview.querySelector('i');
+    if (iconElement) {
+      iconElement.className = iconClass;
+    }
+  }
+}
+
+// Listen for FontAwesome input changes to update preview
+document.addEventListener('DOMContentLoaded', () => {
+  const faInput = document.getElementById('fa-icon-input');
+  if (faInput) {
+    faInput.addEventListener('input', updateFontAwesomePreview);
+  }
+});
 
 // Handle File Upload (PNG, JPG, SVG)
 function handleFileChange(e) {
@@ -272,13 +319,30 @@ function applyPreset(type) {
   renderBadge();
 }
 
+// Text measurement cache to prevent flickering
+const textMeasurementCache = new Map();
+
 // Accurately measure text width using Canvas API
 function measureText(text, fontSpec) {
   if (!text) return 0;
+  
+  // Check cache first
+  const cacheKey = `${text}|${fontSpec}`;
+  if (textMeasurementCache.has(cacheKey)) {
+    return textMeasurementCache.get(cacheKey);
+  }
+  
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   ctx.font = fontSpec;
-  return ctx.measureText(text).width;
+  const width = ctx.measureText(text).width;
+  // Always round up to prevent flickering
+  const roundedWidth = Math.ceil(width);
+  
+  // Cache the measurement
+  textMeasurementCache.set(cacheKey, roundedWidth);
+  
+  return roundedWidth;
 }
 
 // Main Render Logic
@@ -300,11 +364,11 @@ function renderBadge() {
   const userLogoScale = parseInt(document.getElementById('icon-scale-slider').value) || 34;
 
   // Dynamic Specs per Style Variant (matches official intergrav/devins-badges)
-  let height = 56;
-  let topFont = '500 12px Inter, -apple-system, sans-serif';
-  let bottomFont = '800 19px Inter, -apple-system, sans-serif';
-  let topY = 22;
-  let bottomY = 43;
+  let height = 64;
+  let topFont = '500 13px Inter, -apple-system, sans-serif';
+  let bottomFont = '700 21px Inter, -apple-system, sans-serif';
+  let topY = 25;
+  let bottomY = 48;
   let isMinimal = false;
   let isSingleLine = false;
 
@@ -314,8 +378,8 @@ function renderBadge() {
     bottomFont = '700 13px Inter, -apple-system, sans-serif';
     isSingleLine = true;
   } else if (state.style === 'cozy-minimal') {
-    // Official "cozy-minimal" = 56×56 icon-only square
-    height = 56;
+    // Official "cozy-minimal" = 64×64 icon-only square
+    height = 64;
     isMinimal = true;
   } else if (state.style === 'compact-minimal') {
     // Official "compact-minimal" = 40×40 icon-only square
@@ -323,8 +387,8 @@ function renderBadge() {
     isMinimal = true;
   }
 
-  // Scale factor based on badge height relative to 56px Cozy baseline
-  const heightScale = height / 56;
+  // Scale factor based on badge height relative to 64px Cozy baseline
+  const heightScale = height / 64;
 
   // Update slider displays & hex swatches safely
   state.showDisk = showDisk;
@@ -354,7 +418,8 @@ function renderBadge() {
   let width = height;
   if (!isMinimal) {
     // Canvas measureText can slightly overestimate vs SVG — apply correction
-    const textCorrectionFactor = 0.92;
+    // Increased factor to prevent text overflow (was 0.92, now 0.98 for better accuracy)
+    const textCorrectionFactor = 0.98;
     let maxTextW;
     if (isSingleLine) {
       // Compact: only bottomText is rendered, so only measure that
@@ -365,7 +430,8 @@ function renderBadge() {
       const bottomW = bottomText ? measureText(bottomText, bottomFont) * textCorrectionFactor : 0;
       maxTextW = Math.max(topW, bottomW);
     }
-    width = Math.ceil(textX + maxTextW + paddingRight);
+    // Add extra safety margin of 4px to prevent text from touching the border
+    width = Math.ceil(textX + maxTextW + paddingRight + 4);
   }
 
   // Text FX Controls
@@ -428,7 +494,7 @@ function renderBadge() {
     svgMarkup += `    </filter>\n`;
   }
 
-  svgMarkup += `  </defs>\n\n  <!-- Background Card Base -->\n  <rect width="${width}" height="${height}" fill="url(#badge-bg)" rx="${radius}"/>\n  <rect width="${width - 2}" height="${height - 2}" x="1" y="1" stroke="#ffffff" stroke-opacity=".15" stroke-width="1.5" rx="${Math.max(0, radius - 1)}"/>\n`;
+  svgMarkup += `  </defs>\n\n  <!-- Background Card Base -->\n  <rect width="${width}" height="${height}" fill="url(#badge-bg)" rx="${radius}"/>\n  <rect width="${width - 2}" height="${height - 2}" x="1" y="1" stroke="#ffffff" stroke-opacity=".15" stroke-width="2" rx="${Math.max(0, radius - 1)}"/>\n`;
 
   // Optional White / Custom Circle Disk Background
   if (showDisk) {
@@ -453,11 +519,13 @@ function renderBadge() {
       }
 
       if (isMinimal) {
-        const minimalScale = height / 56;
-        const centerOffsetX = height * (0.5 - 32 / 56);
+        const minimalScale = height / 64;
+        const centerOffsetX = height * (0.5 - 32 / 64);
         svgMarkup += `  <!-- Official Custom Vector (Minimal Centered) -->\n  <g transform="translate(${centerOffsetX.toFixed(2)}, 0) scale(${minimalScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
       } else {
-        svgMarkup += `  <!-- Official Custom Vector (Scaled) -->\n  <g transform="translate(0, 0) scale(${heightScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+        // For cozy/compact styles, center vertically by translating Y by (height - 64*heightScale) / 2
+        const yOffset = (height - 64 * heightScale) / 2;
+        svgMarkup += `  <!-- Official Custom Vector (Scaled) -->\n  <g transform="translate(0, ${yOffset.toFixed(2)}) scale(${heightScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
       }
     } else {
       const scaleFactor = effectiveLogoSize / 24;
@@ -472,6 +540,15 @@ function renderBadge() {
     const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
     const imgY = Math.round((height - imgSize) / 2);
     svgMarkup += `  <!-- Uploaded Image/SVG Logo -->\n  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
+  } else if (state.iconMode === 'fontawesome') {
+    const faIconClass = document.getElementById('fa-icon-input')?.value || 'fa-brands fa-github';
+    const imgSize = effectiveLogoSize;
+    const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
+    const imgY = Math.round((height - imgSize) / 2);
+    const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : textColor);
+    
+    // Use foreignObject to embed FontAwesome icon
+    svgMarkup += `  <!-- FontAwesome Icon -->\n  <foreignObject x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}">\n    <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: ${fillColor};">\n      <i class="${faIconClass}" style="font-size: ${imgSize * 0.85}px;"></i>\n    </div>\n  </foreignObject>\n`;
   } else if (state.iconMode === 'raw' && state.rawSvgDataUrl) {
     const imgSize = effectiveLogoSize;
     const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
@@ -594,6 +671,293 @@ function downloadPNG() {
   };
 
   img.src = url;
+}
+
+// Helper function to generate badge SVG for a specific style
+function generateBadgeForStyle(styleName) {
+  const currentStyle = state.style;
+  state.style = styleName;
+  
+  // Temporarily render the badge for this style
+  const topText = document.getElementById('top-text').value;
+  const bottomText = document.getElementById('bottom-text').value;
+  const showDisk = document.getElementById('show-disk-toggle').checked;
+  const diskColor = document.getElementById('disk-color').value;
+  const logoColor = document.getElementById('logo-color').value;
+  const bgColorTop = document.getElementById('bg-color-top').value;
+  const bgColorBottom = document.getElementById('bg-color-bottom').value;
+  const textColor = document.getElementById('text-color').value;
+  const radius = parseInt(document.getElementById('corner-radius').value);
+  const paddingRight = parseInt(document.getElementById('padding-horizontal').value);
+  
+  const diskDiameter = parseInt(document.getElementById('disk-size-slider').value) || 40;
+  const userLogoScale = parseInt(document.getElementById('icon-scale-slider').value) || 34;
+
+  // Dynamic Specs per Style Variant
+  let height = 64;
+  let topFont = '500 13px Inter, -apple-system, sans-serif';
+  let bottomFont = '700 21px Inter, -apple-system, sans-serif';
+  let topY = 25;
+  let bottomY = 48;
+  let isMinimal = false;
+  let isSingleLine = false;
+
+  if (styleName === 'compact') {
+    height = 40;
+    bottomFont = '700 13px Inter, -apple-system, sans-serif';
+    isSingleLine = true;
+  } else if (styleName === 'cozy-minimal') {
+    height = 64;
+    isMinimal = true;
+  } else if (styleName === 'compact-minimal') {
+    height = 40;
+    isMinimal = true;
+  }
+
+  const heightScale = height / 64;
+  const effectiveLogoSize = Math.round(userLogoScale * heightScale);
+
+  const presetKey = document.getElementById('preset-select').value;
+  const brandInfo = OFFICIAL_BRAND_ICONS[presetKey] || OFFICIAL_BRAND_ICONS.github;
+
+  let textX = 62;
+  if (brandInfo && brandInfo.textX && state.iconMode === 'preset') {
+    textX = Math.round(brandInfo.textX * heightScale);
+  } else {
+    textX = Math.round((12 + userLogoScale + 12) * heightScale);
+  }
+
+  let width = height;
+  if (!isMinimal) {
+    const textCorrectionFactor = 0.98;
+    let maxTextW;
+    if (isSingleLine) {
+      maxTextW = bottomText ? measureText(bottomText, bottomFont) * textCorrectionFactor : 0;
+    } else {
+      const topW = topText ? measureText(topText, topFont) * textCorrectionFactor : 0;
+      const bottomW = bottomText ? measureText(bottomText, bottomFont) * textCorrectionFactor : 0;
+      maxTextW = Math.max(topW, bottomW);
+    }
+    width = Math.ceil(textX + maxTextW + paddingRight + 4);
+  }
+
+  const useTextGrad = document.getElementById('text-grad-toggle')?.checked || false;
+  const textGradTop = document.getElementById('text-grad-top')?.value || '#61DAFB';
+  const textGradBot = document.getElementById('text-grad-bot')?.value || '#FFFFFF';
+  const useTextStroke = document.getElementById('text-stroke-toggle')?.checked || false;
+  const textStrokeColor = document.getElementById('text-stroke-color')?.value || '#000000';
+  const textStrokeWidth = document.getElementById('text-stroke-width')?.value || '1.5';
+
+  const useCustomLogoColor = document.getElementById('custom-logo-color-toggle')?.checked || false;
+  const customLogoColor = document.getElementById('logo-color')?.value || '#ffffff';
+  const useLogoStroke = document.getElementById('logo-stroke-toggle')?.checked || false;
+  const logoStrokeColor = document.getElementById('logo-stroke-color')?.value || '#ffffff';
+  const logoStrokeWidth = document.getElementById('logo-stroke-width')?.value || '2';
+
+  // Build SVG
+  let svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}" height="${height}" fill="none" viewBox="0 0 ${width} ${height}">
+  <defs>
+    <linearGradient id="badge-bg-${styleName}" x1="0" y1="0" x2="0" y2="${height}" gradientUnits="userSpaceOnUse">
+      <stop stop-color="${bgColorTop}"/>
+      <stop offset="1" stop-color="${bgColorBottom}"/>
+    </linearGradient>
+`;
+
+  if (useTextGrad) {
+    svgMarkup += `    <linearGradient id="badge-text-grad-${styleName}" x1="0" y1="0" x2="0" y2="100%" gradientUnits="userSpaceOnUse">
+      <stop stop-color="${textGradTop}"/>
+      <stop offset="1" stop-color="${textGradBot}"/>
+    </linearGradient>\n`;
+  }
+
+  const useLogoFxFilter = (useCustomLogoColor || useLogoStroke) && !showDisk;
+  if (useLogoFxFilter) {
+    svgMarkup += `    <filter id="badge-logo-fx-${styleName}" x="-50%" y="-50%" width="200%" height="200%">\n`;
+    if (useLogoStroke) {
+      svgMarkup += `      <feMorphology operator="dilate" radius="${logoStrokeWidth}" in="SourceAlpha" result="expanded"/>\n`;
+      svgMarkup += `      <feFlood flood-color="${logoStrokeColor}" result="strokeColor"/>\n`;
+      svgMarkup += `      <feComposite in="strokeColor" in2="expanded" operator="in" result="stroke"/>\n`;
+    }
+    if (useCustomLogoColor) {
+      svgMarkup += `      <feFlood flood-color="${customLogoColor}" result="tintColor"/>\n`;
+      svgMarkup += `      <feComposite in="tintColor" in2="SourceAlpha" operator="in" result="tintedGraphic"/>\n`;
+    }
+    svgMarkup += `      <feMerge>\n`;
+    if (useLogoStroke) svgMarkup += `        <feMergeNode in="stroke"/>\n`;
+    svgMarkup += `        <feMergeNode in="${useCustomLogoColor ? 'tintedGraphic' : 'SourceGraphic'}"/>\n`;
+    svgMarkup += `      </feMerge>\n`;
+    svgMarkup += `    </filter>\n`;
+  }
+
+  svgMarkup += `  </defs>\n\n  <rect width="${width}" height="${height}" fill="url(#badge-bg-${styleName})" rx="${radius}"/>\n  <rect width="${width - 2}" height="${height - 2}" x="1" y="1" stroke="#ffffff" stroke-opacity=".15" stroke-width="2" rx="${Math.max(0, radius - 1)}"/>\n`;
+
+  if (showDisk) {
+    const diskR = Math.round((diskDiameter * heightScale) / 2);
+    const diskCx = isMinimal ? Math.round(height / 2) : Math.round((12 + userLogoScale / 2) * heightScale);
+    const diskCy = Math.round(height / 2);
+    svgMarkup += `  <circle cx="${diskCx}" cy="${diskCy}" r="${diskR}" fill="${diskColor}"/>\n`;
+  }
+
+  const logoFilterAttr = useLogoFxFilter ? ` filter="url(#badge-logo-fx-${styleName})"` : '';
+
+  // Render Icon
+  if (state.iconMode === 'preset') {
+    if (brandInfo.isCustomSvg) {
+      let svgContent = brandInfo.svg;
+      svgContent = svgContent.replace(/fill="currentColor"/gi, `fill="${brandInfo.color || '#ffffff'}"`);
+
+      if (showDisk) {
+        svgContent = svgContent.replace(/fill="[^"]*"/g, `fill="${logoColor}"`);
+      } else if (useCustomLogoColor) {
+        svgContent = svgContent.replace(/fill="[^"]*"/g, `fill="${customLogoColor}"`);
+      }
+
+      if (isMinimal) {
+        const minimalScale = height / 64;
+        const centerOffsetX = height * (0.5 - 32 / 64);
+        svgMarkup += `  <g transform="translate(${centerOffsetX.toFixed(2)}, 0) scale(${minimalScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+      } else {
+        const yOffset = (height - 64 * heightScale) / 2;
+        svgMarkup += `  <g transform="translate(0, ${yOffset.toFixed(2)}) scale(${heightScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+      }
+    } else {
+      const scaleFactor = effectiveLogoSize / 24;
+      const iconX = isMinimal ? Math.round((height - effectiveLogoSize) / 2) : Math.round(12 * heightScale);
+      const iconY = Math.round((height - effectiveLogoSize) / 2);
+      const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : brandInfo.color);
+
+      svgMarkup += `  <g transform="translate(${iconX}, ${iconY}) scale(${scaleFactor})" fill="${fillColor}"${logoFilterAttr}>\n    <path d="${brandInfo.path}"/>\n  </g>\n`;
+    }
+  } else if (state.iconMode === 'upload' && state.uploadedDataUrl) {
+    const imgSize = effectiveLogoSize;
+    const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
+    const imgY = Math.round((height - imgSize) / 2);
+    svgMarkup += `  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
+  } else if (state.iconMode === 'raw' && state.rawSvgDataUrl) {
+    const imgSize = effectiveLogoSize;
+    const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
+    const imgY = Math.round((height - imgSize) / 2);
+    svgMarkup += `  <image href="${state.rawSvgDataUrl}" xlink:href="${state.rawSvgDataUrl}" x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
+  }
+
+  const textFillAttr = useTextGrad ? `fill="url(#badge-text-grad-${styleName})"` : `fill="${textColor}"`;
+  const textStrokeAttr = useTextStroke ? `stroke="${textStrokeColor}" stroke-width="${textStrokeWidth}" stroke-linejoin="round" paint-order="stroke fill"` : '';
+
+  if (!isMinimal) {
+    if (isSingleLine) {
+      svgMarkup += `  <text x="${textX}" y="${height/2 + 5}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="700">${escapeHtml(bottomText)}</text>\n`;
+    } else {
+      if (topText) {
+        svgMarkup += `  <text x="${textX}" y="${topY}" fill="#e0e0e0" ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="500">${escapeHtml(topText)}</text>\n`;
+      }
+      if (bottomText) {
+        svgMarkup += `  <text x="${textX}" y="${bottomY}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="21" font-weight="700">${escapeHtml(bottomText)}</text>\n`;
+      }
+    }
+  }
+
+  svgMarkup += `</svg>`;
+  
+  // Restore original style
+  state.style = currentStyle;
+  
+  return svgMarkup;
+}
+
+function downloadAllStyles() {
+  const title = (document.getElementById('bottom-text').value || 'badge').toLowerCase().replace(/\s+/g, '_');
+  const styles = ['cozy', 'compact', 'cozy-minimal', 'compact-minimal'];
+  
+  let downloadCount = 0;
+  
+  styles.forEach((styleName, index) => {
+    setTimeout(() => {
+      const svgMarkup = generateBadgeForStyle(styleName);
+      const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `devin_${title}_${styleName}.svg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      downloadCount++;
+      if (downloadCount === styles.length) {
+        showToast('Downloaded all 4 badge styles!');
+      }
+    }, index * 200); // Stagger downloads by 200ms
+  });
+}
+
+function createGitHubIssue() {
+  const repoUrl = prompt('Enter your GitHub repository URL (e.g., https://github.com/username/repo):', '');
+  
+  if (!repoUrl) {
+    showToast('GitHub Issue creation cancelled.');
+    return;
+  }
+  
+  // Parse the GitHub URL
+  const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+  if (!match) {
+    showToast('Invalid GitHub URL! Use format: github.com/username/repo');
+    return;
+  }
+  
+  const owner = match[1];
+  const repo = match[2].replace(/\.git$/, '');
+  
+  const topText = document.getElementById('top-text').value || 'Available on';
+  const bottomText = document.getElementById('bottom-text').value || 'Badge';
+  const currentStyle = state.style;
+  
+  // Generate the SVG code
+  const svgCode = document.getElementById('badge-stage').innerHTML;
+  
+  // Create issue title and body
+  const issueTitle = encodeURIComponent(`Add Badge: ${bottomText}`);
+  const issueBody = encodeURIComponent(`## Badge Request
+
+**Top Text:** ${topText}
+**Bottom Text:** ${bottomText}
+**Style:** ${currentStyle}
+
+### Badge Preview
+![Badge Preview](data:image/svg+xml;base64,${btoa(svgCode)})
+
+### Badge Code
+
+#### Markdown
+\`\`\`markdown
+![${bottomText}](badge.svg)
+\`\`\`
+
+#### HTML
+\`\`\`html
+<img src="badge.svg" alt="${bottomText}" />
+\`\`\`
+
+#### SVG Code
+\`\`\`xml
+${svgCode}
+\`\`\`
+
+---
+*Generated with [Devin's Badge Generator](https://github.com)*`);
+  
+  // Open GitHub issue creation page
+  const issueUrl = `https://github.com/${owner}/${repo}/issues/new?title=${issueTitle}&body=${issueBody}`;
+  
+  // Check if URL is too long (GitHub has limits)
+  if (issueUrl.length > 8000) {
+    showToast('Badge data too large! Try downloading the SVG instead.');
+    return;
+  }
+  
+  window.open(issueUrl, '_blank');
+  showToast('Opening GitHub issue creation page...');
 }
 
 function showToast(msg) {

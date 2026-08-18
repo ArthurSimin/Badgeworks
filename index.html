@@ -6,6 +6,7 @@
   <title>Devin's Badge Generator</title>
   <meta name="description" content="Create pixel-perfect Devin-style badges with custom PNG & SVG logo upload, exact typography, pure standalone logos, and dynamic text padding.">
   <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
 
@@ -74,7 +75,7 @@
             <button class="style-option active" data-style="cozy" onclick="setStyle('cozy')">
               <div class="style-option-head">
                 <span class="style-title">Cozy</span>
-                <span class="style-badge">56px</span>
+                <span class="style-badge">64px</span>
               </div>
               <span class="style-sub">Full 2-line text & logo</span>
             </button>
@@ -88,7 +89,7 @@
             <button class="style-option" data-style="cozy-minimal" onclick="setStyle('cozy-minimal')">
               <div class="style-option-head">
                 <span class="style-title">Cozy Minimal</span>
-                <span class="style-badge">56px</span>
+                <span class="style-badge">64px</span>
               </div>
               <span class="style-sub">Large icon only</span>
             </button>
@@ -163,6 +164,7 @@
           <!-- Icon Source Segmented Tabs -->
           <div class="segmented-control">
             <button class="seg-btn active" id="seg-preset" onclick="setIconMode('preset')">Preset Icons</button>
+            <button class="seg-btn" id="seg-fontawesome" onclick="setIconMode('fontawesome')">FontAwesome</button>
             <button class="seg-btn" id="seg-upload" onclick="setIconMode('upload')">Upload Image / SVG</button>
             <button class="seg-btn" id="seg-raw" onclick="setIconMode('raw')">Paste SVG Code</button>
           </div>
@@ -188,6 +190,19 @@
               <option value="star">Star</option>
               <option value="terminal">Terminal</option>
             </select>
+          </div>
+
+          <!-- Mode 1.5: FontAwesome Icons -->
+          <div id="icon-mode-fontawesome" class="mode-container" style="display: none;">
+            <div class="field-group">
+              <label for="fa-icon-input">FontAwesome Icon Class (e.g., fa-brands fa-github)</label>
+              <input type="text" id="fa-icon-input" class="input-text" placeholder="fa-brands fa-github" oninput="renderBadge()" value="fa-brands fa-github">
+              <span style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.25rem;">Browse icons at <a href="https://fontawesome.com/icons" target="_blank" style="color: var(--accent-cyan);">fontawesome.com/icons</a></span>
+            </div>
+            <div class="fa-preview" id="fa-preview" style="margin-top: 0.75rem; padding: 1rem; background: var(--bg-input); border-radius: var(--radius-sm); text-align: center;">
+              <i class="fa-brands fa-github" style="font-size: 48px; color: var(--text-primary);"></i>
+              <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">Icon Preview</p>
+            </div>
           </div>
 
           <!-- Mode 2: Upload File (PNG, JPG, SVG) -->
@@ -301,8 +316,8 @@
               <input type="range" id="corner-radius" min="0" max="24" value="8" class="range-slider" oninput="renderBadge()">
             </div>
             <div class="field-group">
-              <label for="padding-horizontal">Right Padding: <span id="padding-val" class="slider-num">16px</span></label>
-              <input type="range" id="padding-horizontal" min="8" max="32" value="16" class="range-slider" oninput="renderBadge()">
+              <label for="padding-horizontal">Right Padding: <span id="padding-val" class="slider-num">8px</span></label>
+              <input type="range" id="padding-horizontal" min="8" max="32" value="8" class="range-slider" oninput="renderBadge()">
             </div>
           </div>
         </div>
@@ -333,6 +348,15 @@
               Download PNG
             </button>
           </div>
+          <button class="btn btn-accent" onclick="downloadAllStyles()" style="margin-top: 0.75rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="8" height="8" rx="1"/></svg>
+            Export All 4 Styles
+          </button>
+          <button class="btn btn-github" onclick="createGitHubIssue()" style="margin-top: 0.5rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+            Create GitHub Issue with Badge
+          </button>
         </div>
 
         <!-- Code Snippet Output Box -->

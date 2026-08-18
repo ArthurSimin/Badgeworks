@@ -585,6 +585,31 @@ body {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.btn-accent {
+  background: linear-gradient(135deg, var(--accent-green), #059669);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.25);
+  width: 100%;
+}
+
+.btn-accent:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+}
+
+.btn-github {
+  background: #24292e;
+  color: #fff;
+  border: 1px solid #444d56;
+  width: 100%;
+}
+
+.btn-github:hover {
+  background: #2f363d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(36, 41, 46, 0.5);
+}
+
 /* Code Output Card */
 .code-card {
   background: var(--bg-panel);
