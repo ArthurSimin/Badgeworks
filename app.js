@@ -196,24 +196,85 @@ function setIconMode(mode) {
   renderBadge();
 }
 
+// Parse FA input: accepts full <i class="..."> tag OR plain class string
+function parseFontAwesomeInput(raw) {
+  if (!raw) return 'fa-brands fa-github';
+  const tagMatch = raw.match(/<i[^>]+class=["']([^"']+)["']/i);
+  if (tagMatch) return tagMatch[1].trim();
+  return raw.trim();
+}
+
 function updateFontAwesomePreview() {
   const faInput = document.getElementById('fa-icon-input');
   const faPreview = document.getElementById('fa-preview');
-  
-  if (faInput && faPreview) {
-    const iconClass = faInput.value || 'fa-brands fa-github';
-    const iconElement = faPreview.querySelector('i');
-    if (iconElement) {
-      iconElement.className = iconClass;
+  if (!faInput || !faPreview) return;
+
+  const iconClass = parseFontAwesomeInput(faInput.value);
+  const iconElement = faPreview.querySelector('i');
+  if (iconElement) iconElement.className = iconClass;
+}
+
+// FA CDN fetch cache
+const faIconCache = new Map();
+
+// Parse "fa-brands fa-github" or "fa-solid fa-image" into { style, name }
+// style: solid → s, regular → r, brands → brands, light → l, thin → t, duotone → d
+function parseFaClass(iconClass) {
+  const parts = iconClass.trim().split(/\s+/).filter(p => p.startsWith('fa-'));
+  let style = 'solid';
+  let name = null;
+  for (const p of parts) {
+    const token = p.replace('fa-', '');
+    if (['solid','regular','light','thin','duotone','brands','brand','slab'].includes(token)) {
+      if (token === 'brands' || token === 'brand') style = 'brands';
+      else if (token === 'regular') style = 'regular';
+      else if (token === 'light') style = 'light';
+      else style = 'solid';
+    } else if (token !== 'fa' && token !== '') {
+      name = token;
     }
   }
+  return { style, name };
+}
+
+// Fetch the real SVG from the FontAwesome free CDN and extract path + viewBox
+function extractFontAwesomeSvg(iconClass) {
+  const { style, name } = parseFaClass(iconClass);
+  if (!name) return Promise.resolve(null);
+
+  const cacheKey = `${style}:${name}`;
+  if (faIconCache.has(cacheKey)) return Promise.resolve(faIconCache.get(cacheKey));
+
+  // Map style to CDN folder
+  const folder = style === 'brands' ? 'brands' : style === 'regular' ? 'regular' : 'solid';
+  const url = `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/svgs/${folder}/${name}.svg`;
+
+  return fetch(url)
+    .then(r => r.ok ? r.text() : null)
+    .then(svgText => {
+      if (!svgText) { faIconCache.set(cacheKey, null); return null; }
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svgText, 'image/svg+xml');
+      const svgEl = doc.querySelector('svg');
+      if (!svgEl) { faIconCache.set(cacheKey, null); return null; }
+      const viewBox = svgEl.getAttribute('viewBox') || '0 0 512 512';
+      const pathData = Array.from(svgEl.querySelectorAll('path'))
+        .map(p => p.getAttribute('d')).filter(Boolean).join(' ');
+      const result = pathData ? { viewBox, pathData } : null;
+      faIconCache.set(cacheKey, result);
+      return result;
+    })
+    .catch(() => { faIconCache.set(cacheKey, null); return null; });
 }
 
 // Listen for FontAwesome input changes to update preview
 document.addEventListener('DOMContentLoaded', () => {
   const faInput = document.getElementById('fa-icon-input');
   if (faInput) {
-    faInput.addEventListener('input', updateFontAwesomePreview);
+    faInput.addEventListener('input', () => {
+      updateFontAwesomePreview();
+      renderBadge();
+    });
   }
 });
 
@@ -415,24 +476,25 @@ function renderBadge() {
     textX = Math.round((12 + userLogoScale + 12) * heightScale);
   }
 
+  // Max badge width — beyond this, text compresses instead of growing the badge
+  const MAX_BADGE_WIDTH = 420;
+
   let width = height;
   if (!isMinimal) {
-    // Canvas measureText can slightly overestimate vs SVG — apply correction
-    // Increased factor to prevent text overflow (was 0.92, now 0.98 for better accuracy)
     const textCorrectionFactor = 0.98;
     let maxTextW;
     if (isSingleLine) {
-      // Compact: only bottomText is rendered, so only measure that
       maxTextW = bottomText ? measureText(bottomText, bottomFont) * textCorrectionFactor : 0;
     } else {
-      // Cozy: both lines rendered, use the wider one
       const topW = topText ? measureText(topText, topFont) * textCorrectionFactor : 0;
       const bottomW = bottomText ? measureText(bottomText, bottomFont) * textCorrectionFactor : 0;
       maxTextW = Math.max(topW, bottomW);
     }
-    // Add extra safety margin of 4px to prevent text from touching the border
-    width = Math.ceil(textX + maxTextW + paddingRight + 4);
+    width = Math.min(Math.ceil(textX + maxTextW + paddingRight + 4), MAX_BADGE_WIDTH);
   }
+
+  // How many px are actually available for text (used for textLength compression)
+  const availableTextWidth = width - textX - paddingRight - 4;
 
   // Text FX Controls
   const useTextGrad = document.getElementById('text-grad-toggle')?.checked || false;
@@ -541,14 +603,58 @@ function renderBadge() {
     const imgY = Math.round((height - imgSize) / 2);
     svgMarkup += `  <!-- Uploaded Image/SVG Logo -->\n  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
   } else if (state.iconMode === 'fontawesome') {
-    const faIconClass = document.getElementById('fa-icon-input')?.value || 'fa-brands fa-github';
+    const rawFaInput = document.getElementById('fa-icon-input')?.value || 'fa-brands fa-github';
+    const faIconClass = parseFontAwesomeInput(rawFaInput);
     const imgSize = effectiveLogoSize;
     const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
     const imgY = Math.round((height - imgSize) / 2);
     const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : textColor);
-    
-    // Use foreignObject to embed FontAwesome icon
-    svgMarkup += `  <!-- FontAwesome Icon -->\n  <foreignObject x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}">\n    <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: ${fillColor};">\n      <i class="${faIconClass}" style="font-size: ${imgSize * 0.85}px;"></i>\n    </div>\n  </foreignObject>\n`;
+
+    // Add a placeholder slot — will be replaced once the CDN fetch resolves
+    svgMarkup += `  <!-- FA_ICON_SLOT -->\n`;
+
+    // Finish building the rest of the SVG (text etc.) before the async fetch
+    const textFillAttr2 = useTextGrad ? 'fill="url(#badge-text-grad)"' : `fill="${textColor}"`;
+    const textStrokeAttr2 = useTextStroke ? `stroke="${textStrokeColor}" stroke-width="${textStrokeWidth}" stroke-linejoin="round" paint-order="stroke fill"` : '';
+    if (!isMinimal) {
+      if (isSingleLine) {
+        const cTW = bottomText ? measureText(bottomText, bottomFont) * 0.98 : 0;
+        const cTA = availableTextWidth;
+        const cTL = cTW > cTA ? `textLength="${cTA}" lengthAdjust="spacingAndGlyphs"` : '';
+        svgMarkup += `  <text x="${textX}" y="${height/2 + 5}" ${textFillAttr2} ${textStrokeAttr2} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="700" ${cTL}>${escapeHtml(bottomText)}</text>\n`;
+      } else {
+        const topMW = topText ? measureText(topText, topFont) * 0.98 : 0;
+        const botMW = bottomText ? measureText(bottomText, bottomFont) * 0.98 : 0;
+        if (topText) {
+          const tTL = topMW > availableTextWidth ? `textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"` : '';
+          svgMarkup += `  <text x="${textX}" y="${topY}" fill="#e0e0e0" ${textStrokeAttr2} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="500" ${tTL}>${escapeHtml(topText)}</text>\n`;
+        }
+        if (bottomText) {
+          const bTL = botMW > availableTextWidth ? `textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"` : '';
+          svgMarkup += `  <text x="${textX}" y="${bottomY}" ${textFillAttr2} ${textStrokeAttr2} font-family="Inter, -apple-system, sans-serif" font-size="21" font-weight="700" ${bTL}>${escapeHtml(bottomText)}</text>\n`;
+        }
+      }
+    }
+    svgMarkup += `</svg>`;
+
+    // Commit with placeholder icon immediately so text shows up right away
+    const placeholderIcon = `<text x="${imgX + imgSize / 2}" y="${imgY + imgSize * 0.7}" fill="#ffffff" font-size="${imgSize}" font-family="sans-serif" text-anchor="middle" opacity="0.6">?</text>`;
+    const withPlaceholder = svgMarkup.replace('<!-- FA_ICON_SLOT -->', placeholderIcon);
+    document.getElementById('badge-stage').innerHTML = withPlaceholder;
+    document.getElementById('badge-size-display').innerText = `${width} × ${height} px`;
+    updateSnippetOutput(withPlaceholder, bottomText || 'Badge');
+
+    // Async: fetch real icon and swap in
+    extractFontAwesomeSvg(faIconClass).then((fa) => {
+      if (!fa) return; // Leave the placeholder if icon not found
+      const realIcon = `<svg x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${fa.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${fa.pathData}"/></svg>`;
+      const finalSvg = svgMarkup.replace('<!-- FA_ICON_SLOT -->', realIcon);
+      document.getElementById('badge-stage').innerHTML = finalSvg;
+      document.getElementById('badge-size-display').innerText = `${width} × ${height} px`;
+      updateSnippetOutput(finalSvg, bottomText || 'Badge');
+    });
+
+    return; // Text already committed above, async swap handles the icon
   } else if (state.iconMode === 'raw' && state.rawSvgDataUrl) {
     const imgSize = effectiveLogoSize;
     const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
@@ -557,7 +663,7 @@ function renderBadge() {
   } else {
     const qX = isMinimal ? Math.round(height / 2) : Math.round(12 * heightScale + effectiveLogoSize / 2);
     const qY = Math.round(height / 2 + effectiveLogoSize * 0.35);
-    svgMarkup += `  <!-- Placeholder ? Icon -->\n  <text x="${qX}" y="${qY}" fill="${textColor}" font-family="Inter, -apple-system, sans-serif" font-size="${effectiveLogoSize}" font-weight="700" text-anchor="middle" opacity="0.5">?</text>\n`;
+    svgMarkup += `  <!-- Placeholder ? Icon -->\n  <text x="${qX}" y="${qY}" fill="#ffffff" font-family="Inter, -apple-system, sans-serif" font-size="${effectiveLogoSize}" font-weight="700" text-anchor="middle" opacity="0.6">?</text>\n`;
   }
 
   // Render Typography with Gradients & Stroke Outlines
@@ -566,13 +672,26 @@ function renderBadge() {
 
   if (!isMinimal) {
     if (isSingleLine) {
-      svgMarkup += `  <!-- 1-Line Text -->\n  <text x="${textX}" y="${height/2 + 5}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="700">${escapeHtml(bottomText)}</text>\n`;
+      const compactTextW = bottomText ? measureText(bottomText, bottomFont) * 0.98 : 0;
+      const compactAvail = availableTextWidth;
+      const compactTextLenAttr = compactTextW > compactAvail
+        ? `textLength="${compactAvail}" lengthAdjust="spacingAndGlyphs"`
+        : '';
+      svgMarkup += `  <!-- 1-Line Text -->\n  <text x="${textX}" y="${height/2 + 5}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="700" ${compactTextLenAttr}>${escapeHtml(bottomText)}</text>\n`;
     } else {
+      const topMeasured   = topText    ? measureText(topText,    topFont)    * 0.98 : 0;
+      const bottomMeasured = bottomText ? measureText(bottomText, bottomFont) * 0.98 : 0;
       if (topText) {
-        svgMarkup += `  <text x="${textX}" y="${topY}" fill="#e0e0e0" ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="12" font-weight="500">${escapeHtml(topText)}</text>\n`;
+        const topTextLenAttr = topMeasured > availableTextWidth
+          ? `textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"`
+          : '';
+        svgMarkup += `  <text x="${textX}" y="${topY}" fill="#e0e0e0" ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="500" ${topTextLenAttr}>${escapeHtml(topText)}</text>\n`;
       }
       if (bottomText) {
-        svgMarkup += `  <text x="${textX}" y="${bottomY}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="19" font-weight="800">${escapeHtml(bottomText)}</text>\n`;
+        const bottomTextLenAttr = bottomMeasured > availableTextWidth
+          ? `textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"`
+          : '';
+        svgMarkup += `  <text x="${textX}" y="${bottomY}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="21" font-weight="700" ${bottomTextLenAttr}>${escapeHtml(bottomText)}</text>\n`;
       }
     }
   }
@@ -643,23 +762,30 @@ function downloadPNG() {
   const title = (document.getElementById('bottom-text').value || 'badge').toLowerCase().replace(/\s+/g, '_');
   const width = parseInt(svgElement.getAttribute('width'));
   const height = parseInt(svgElement.getAttribute('height'));
-
-  const svgData = new XMLSerializer().serializeToString(svgElement);
-  const canvas = document.createElement('canvas');
   const scale = 3;
+
+  // Clone and fix up SVG for canvas rendering
+  const svgClone = svgElement.cloneNode(true);
+  svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  svgClone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
+  // Inject Google Fonts stylesheet so text renders correctly in canvas
+  const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  styleEl.textContent = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');`;
+  svgClone.insertBefore(styleEl, svgClone.firstChild);
+
+  const svgData = new XMLSerializer().serializeToString(svgClone);
+  const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+
+  const canvas = document.createElement('canvas');
   canvas.width = width * scale;
   canvas.height = height * scale;
   const ctx = canvas.getContext('2d');
   ctx.scale(scale, scale);
 
   const img = new Image();
-  const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-  const url = URL.createObjectURL(svgBlob);
-
   img.onload = () => {
     ctx.drawImage(img, 0, 0);
-    URL.revokeObjectURL(url);
-
     const pngUrl = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = pngUrl;
@@ -669,8 +795,10 @@ function downloadPNG() {
     document.body.removeChild(link);
     showToast('Downloaded high-res PNG badge!');
   };
-
-  img.src = url;
+  img.onerror = () => {
+    showToast('PNG export failed — try Download SVG instead.');
+  };
+  img.src = svgDataUrl;
 }
 
 // Helper function to generate badge SVG for a specific style
@@ -833,6 +961,9 @@ function generateBadgeForStyle(styleName) {
     const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
     const imgY = Math.round((height - imgSize) / 2);
     svgMarkup += `  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
+  } else if (state.iconMode === 'fontawesome') {
+    // Slot replaced by getResolvedSvg() in createGitHubIssue before canvas render
+    svgMarkup += `  <!-- FA_ICON_SLOT -->\n`;
   } else if (state.iconMode === 'raw' && state.rawSvgDataUrl) {
     const imgSize = effectiveLogoSize;
     const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
@@ -892,72 +1023,155 @@ function downloadAllStyles() {
 }
 
 function createGitHubIssue() {
-  const repoUrl = prompt('Enter your GitHub repository URL (e.g., https://github.com/username/repo):', '');
-  
-  if (!repoUrl) {
-    showToast('GitHub Issue creation cancelled.');
-    return;
+  const topText    = document.getElementById('top-text').value   || '';
+  const bottomText = document.getElementById('bottom-text').value || '';
+
+  const badgePurpose = prompt(
+    'What is the badge for?\n(This will be filled into the issue)',
+    bottomText ? `A "${bottomText}" badge` : ''
+  );
+  if (badgePurpose === null) return;
+
+  showToast('Uploading badge previews… please wait.');
+
+  // Resolve the FA icon SVG if in fontawesome mode, then kick off the rest
+  let faIconPromise = Promise.resolve(null);
+  if (state.iconMode === 'fontawesome') {
+    const faClass = parseFontAwesomeInput(document.getElementById('fa-icon-input')?.value || '');
+    faIconPromise = extractFontAwesomeSvg(faClass);
   }
-  
-  // Parse the GitHub URL
-  const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-  if (!match) {
-    showToast('Invalid GitHub URL! Use format: github.com/username/repo');
-    return;
-  }
-  
-  const owner = match[1];
-  const repo = match[2].replace(/\.git$/, '');
-  
-  const topText = document.getElementById('top-text').value || 'Available on';
-  const bottomText = document.getElementById('bottom-text').value || 'Badge';
-  const currentStyle = state.style;
-  
-  // Generate the SVG code
-  const svgCode = document.getElementById('badge-stage').innerHTML;
-  
-  // Create issue title and body
-  const issueTitle = encodeURIComponent(`Add Badge: ${bottomText}`);
-  const issueBody = encodeURIComponent(`## Badge Request
 
-**Top Text:** ${topText}
-**Bottom Text:** ${bottomText}
-**Style:** ${currentStyle}
+  faIconPromise.then((faIcon) => {
+    // Build "preferred icons/text" section
+    let iconDescription = '';
+    if (state.iconMode === 'preset') {
+      const presetKey = document.getElementById('preset-select').value;
+      iconDescription = `Preset icon: **${presetKey}**`;
+    } else if (state.iconMode === 'fontawesome') {
+      const faClass = parseFontAwesomeInput(document.getElementById('fa-icon-input')?.value || '');
+      const { name } = parseFaClass(faClass);
+      const faUrl = `https://fontawesome.com/icons/${name}`;
+      if (faIcon) {
+        // Embed the actual SVG so the maintainer has everything they need
+        const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${faIcon.viewBox}"><path d="${faIcon.pathData}"/></svg>`;
+        iconDescription = `FontAwesome icon: [\`${faClass}\`](${faUrl})\n\n\`\`\`xml\n${iconSvg}\n\`\`\``;
+      } else {
+        iconDescription = `FontAwesome icon: [\`${faClass}\`](${faUrl})`;
+      }
+    } else if (state.iconMode === 'raw') {
+      const rawSvg = document.getElementById('raw-svg-code')?.value?.trim() || '';
+      iconDescription = rawSvg ? `Custom SVG icon:\n\`\`\`xml\n${rawSvg}\n\`\`\`` : 'Custom SVG icon';
+    } else {
+      // Upload mode — only SVGs are useful to the maintainer
+      if (!state.isUploadedSvg) {
+        showToast('Please use an SVG icon — PNG/JPG uploads cannot be used by the badge maintainer.');
+        return;
+      }
+      // Reconstruct the SVG from the parsed content we already have
+      const svgContent = state.customSvgContent || '';
+      iconDescription = svgContent
+        ? `Custom uploaded SVG icon:\n\`\`\`xml\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">\n${svgContent}\n</svg>\n\`\`\``
+        : 'Custom uploaded SVG icon (see badge examples below)';
+    }
 
-### Badge Preview
-![Badge Preview](data:image/svg+xml;base64,${btoa(svgCode)})
+    const textLines = [
+      topText    ? `Top text: **${topText}**`       : '',
+      bottomText ? `Bottom text: **${bottomText}**` : ''
+    ].filter(Boolean).join('\n');
 
-### Badge Code
+    const iconsAndText = [iconDescription, textLines].filter(Boolean).join('\n\n');
 
-#### Markdown
-\`\`\`markdown
-![${bottomText}](badge.svg)
-\`\`\`
+    // Generate SVG for each style, resolving FA icon slot if needed
+    function getResolvedSvg(styleName) {
+      const svg = generateBadgeForStyle(styleName);
+      if (state.iconMode !== 'fontawesome' || !faIcon) return Promise.resolve(svg);
 
-#### HTML
-\`\`\`html
-<img src="badge.svg" alt="${bottomText}" />
-\`\`\`
+      // generateBadgeForStyle leaves <!-- FA_ICON_SLOT --> — resolve it now
+      const wMatch = svg.match(/width="(\d+)"/);
+      const hMatch = svg.match(/height="(\d+)"/);
+      const h = hMatch ? parseInt(hMatch[1]) : 64;
+      const heightScale = h / 64;
+      const userLogoScale = parseInt(document.getElementById('icon-scale-slider').value) || 34;
+      const imgSize = Math.round(userLogoScale * heightScale);
+      const isMinimal = styleName === 'cozy-minimal' || styleName === 'compact-minimal';
+      const imgX = isMinimal ? Math.round((h - imgSize) / 2) : Math.round(12 * heightScale);
+      const imgY = Math.round((h - imgSize) / 2);
+      const fillColor = document.getElementById('text-color').value || '#ffffff';
+      const realIcon = `<svg x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${faIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${faIcon.pathData}"/></svg>`;
+      return Promise.resolve(svg.replace('<!-- FA_ICON_SLOT -->', realIcon));
+    }
 
-#### SVG Code
-\`\`\`xml
-${svgCode}
-\`\`\`
+    // Render one resolved SVG to a PNG base64 string via canvas
+    function svgToPngBase64(svgString, w, h) {
+      return new Promise((resolve) => {
+        const scale = 3;
+        const canvas = document.createElement('canvas');
+        canvas.width  = w * scale;
+        canvas.height = h * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
+        const img = new Image();
+        const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png').split(',')[1]);
+        };
+        img.onerror = () => resolve(null);
+        img.src = url;
+      });
+    }
 
----
-*Generated with [Devin's Badge Generator](https://github.com)*`);
-  
-  // Open GitHub issue creation page
-  const issueUrl = `https://github.com/${owner}/${repo}/issues/new?title=${issueTitle}&body=${issueBody}`;
-  
-  // Check if URL is too long (GitHub has limits)
-  if (issueUrl.length > 8000) {
-    showToast('Badge data too large! Try downloading the SVG instead.');
-    return;
-  }
-  
-  window.open(issueUrl, '_blank');
-  showToast('Opening GitHub issue creation page...');
+    // Upload a base64 PNG to Imgur anonymously
+    function uploadToImgur(base64png, title) {
+      return fetch('https://api.imgur.com/3/image', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Client-ID 546c25a59c58ad7',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ image: base64png, type: 'base64', title })
+      })
+      .then(r => r.json())
+      .then(data => data.success ? data.data.link : null)
+      .catch(() => null);
+    }
+
+    const styleList = ['cozy', 'compact', 'cozy-minimal', 'compact-minimal'];
+
+    Promise.all(styleList.map(async (s) => {
+      const svg = await getResolvedSvg(s);
+      const wMatch = svg.match(/width="(\d+)"/);
+      const hMatch = svg.match(/height="(\d+)"/);
+      const w = wMatch ? parseInt(wMatch[1]) : 200;
+      const h = hMatch ? parseInt(hMatch[1]) : 64;
+      const base64png = await svgToPngBase64(svg, w, h);
+      if (!base64png) return { style: s, url: null };
+      const url = await uploadToImgur(base64png, `devin-badge-${s}`);
+      return { style: s, url };
+    })).then((results) => {
+      const exampleLines = results.map(({ style, url }) =>
+        url ? `**${style}**\n![${style} badge](${url})` : `**${style}**\n*(upload failed)*`
+      ).join('\n\n');
+
+      const body =
+`**What is the badge for?**
+${badgePurpose}
+
+**Provide any preferred icons/text (icons must be SVG)**
+${iconsAndText}
+
+**Example if needed**
+${exampleLines}`;
+
+      navigator.clipboard.writeText(body)
+        .then(() => showToast('Done! Body copied — paste it into the issue form.'))
+        .catch(() => showToast('Uploaded! But clipboard failed — copy the body manually.'));
+
+      const title = encodeURIComponent(`${bottomText || badgePurpose} [NEW]`);
+      const url = `https://github.com/intergrav/devins-badges/issues/new?template=new-badge.md&title=${title}`;
+      window.open(url, '_blank');
+    });
+  });
 }
 
 function showToast(msg) {
@@ -993,6 +1207,7 @@ function getBadgeConfig() {
     rawSvgDataUrl: state.rawSvgDataUrl || '',
     customSvgContent: state.customSvgContent || '',
     isUploadedSvg: state.isUploadedSvg,
+    faIconInput: document.getElementById('fa-icon-input')?.value || 'fa-brands fa-github',
     showDisk: document.getElementById('show-disk-toggle')?.checked || false,
     diskColor: document.getElementById('disk-color')?.value || '#ffffff',
     logoColor: document.getElementById('logo-color')?.value || '#ffffff',
@@ -1029,6 +1244,10 @@ function applyBadgeConfig(cfg) {
   if (cfg.rawSvgDataUrl !== undefined) state.rawSvgDataUrl = cfg.rawSvgDataUrl;
   if (cfg.customSvgContent !== undefined) state.customSvgContent = cfg.customSvgContent;
   if (cfg.isUploadedSvg !== undefined) state.isUploadedSvg = cfg.isUploadedSvg;
+  if (cfg.faIconInput !== undefined && document.getElementById('fa-icon-input')) {
+    document.getElementById('fa-icon-input').value = cfg.faIconInput;
+    updateFontAwesomePreview();
+  }
 
   if (cfg.showDisk !== undefined && document.getElementById('show-disk-toggle')) document.getElementById('show-disk-toggle').checked = cfg.showDisk;
   if (cfg.diskColor && document.getElementById('disk-color')) document.getElementById('disk-color').value = cfg.diskColor;
