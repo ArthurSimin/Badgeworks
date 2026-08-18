@@ -4,6 +4,12 @@
   <img width="180" alt="Devin AI Badge" src="https://github.com/user-attachments/assets/fab7982b-4b07-4ce8-942f-b5c4b6fc6504" />
 </p>
 
+
+<p align="center">
+  <img width="180" alt="Gemini AI Badge" src="https://github.com/user-attachments/assets/97d71cfb-f903-4d6d-b708-718f5b49aed8"/>
+</p>
+
+
 <p align="center">
   <strong>Create pixel-perfect, customizable badges in the official <code>@intergrav/devins-badges</code> style — right in your browser!</strong>
 </p>
