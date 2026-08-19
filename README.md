@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://arthursimin.github.io/Devin-Badge-Generator/">Try the live website</a>
+  <a href="https://arthursimin.github.io/Badgeworks/Try the live website</a>
 </p>
 
 <p align="center">
@@ -43,7 +43,7 @@
 
   * Drag-and-drop or file upload support for PNG, JPG, WebP, and SVG logos
   * Automatic resolution & viewBox auto-scaling (handles 16×16 to 4K / 1024px viewBox SVGs like Godot Engine)
-  * Paste raw `<svg>...</svg>` code directly into the studio
+  * Paste raw `<svg>...</svg>` code directly into the generator
 
 * **Endless FX Customization**:
 
@@ -70,7 +70,7 @@ You can use the live website directly at [arthursimin.github.io/Devin-badge-stud
 1. Clone or download this repository:
 
    ```bash
-   git clone https://github.com/ArthurSimin/Devin-badge-studio.git
+   git clone https://github.com/ArthurSimin/Badgeworks.git
    ```
 
 2. Open [`index.html`](index.html) in any modern web browser. No Node.js or server setup required.
