@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://arthursimin.github.io/Badgeworks/Try the live website</a>
+  <a href="https://arthursimin.github.io/Badgeworks">Try the live website</a>
 </p>
 
 <p align="center">
@@ -22,14 +22,18 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Devin's-Badge_Studio-00d2ff?style=for-the-badge&logo=github" alt="Devin Badge Studio" />
+  <img src="https://img.shields.io/badge/Arthur_Simin's-Badgeworks-blue?style=for-the-badge&logo=github" alt="Devin Badge Studio" />
 </p>
 
 ## Features
+* **Export directly to the [`@intensed-dev/devinsbadges-customs`](https://github.com/intensed-dev/devinsbadges-customs) repo!**
+
+  * You can directly create an Issue to add your creations to [![ShieldsIO](https://img.shields.io/badge/intensed--devs's-devinsbadges--customs-blue?style=for-the-badge&logo=github)](https://github.com/intensed-dev/devinsbadges-customs) library repo for more, unofficial devinsbadges!
+
 
 * **4 Official Badge Style Variants**:
 
-  * Cozy (56px) — Full 2-line title & subtitle
+  * Cozy (64px) — Full 2-line title & subtitle
   * Compact (40px) — Sleek single-line text
   * Cozy Minimal (56×56) — Icon-only square badge
   * Compact Minimal (40×40) — Small icon-only square badge
