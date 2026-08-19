@@ -12,3 +12,6 @@ Thumbs.db
 
 # Logs & temp
 *.log
+
+# Badges 
+devin_deepseek_4_flash_free_badge.svg
