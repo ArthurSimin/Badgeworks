@@ -1,10 +1,7 @@
 <h1 align="center">Badgeworks</h1>
 
 <p align="center">
-  <img width="280" alt="Gemini AI Badge" src="https://github.com/user-attachments/assets/97d71cfb-f903-4d6d-b708-718f5b49aed8"/>
-  <img alt="github" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/github_vector.svg">
-  <img alt="git" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/git_vector.svg">
-  <img alt="generic" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/documentation/generic_vector.svg">
+  <img height="56" alt="Gemini AI Badge" src="https://github.com/user-attachments/assets/97d71cfb-f903-4d6d-b708-718f5b49aed8"/><img alt="github" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/github_vector.svg"><img alt="git" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/git_vector.svg"><img alt="generic" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/documentation/generic_vector.svg"><img alt="website" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/documentation/website_vector.svg">
 </p>
 
 
