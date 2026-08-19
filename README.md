@@ -1,4 +1,4 @@
-<h1 align="center">Devin's Badge Generator</h1>
+<h1 align="center">Badgeworks</h1>
 
 <p align="center">
   <img width="280" alt="Gemini AI Badge" src="https://github.com/user-attachments/assets/97d71cfb-f903-4d6d-b708-718f5b49aed8"/>
