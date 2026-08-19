@@ -1,5 +1,5 @@
 /* ==========================================================================
-   DEVIN'S BADGE STUDIO - APPLICATION LOGIC
+   BADGEWORKS - APPLICATION LOGIC
    ========================================================================== */
 
 // Application State
