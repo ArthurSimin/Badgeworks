@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Badgeworks</title>
-  <meta name="description" content="Create pixel-perfect Devin-style badges with custom PNG & SVG logo upload, exact typography, pure standalone logos, and dynamic text padding.">
+  <meta name="description" content="Create pixel-perfect Badgeworks-style badges with custom PNG & SVG logo upload, exact typography, pure standalone logos, and dynamic text padding.">
   <link rel="stylesheet" href="index.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
@@ -15,10 +15,16 @@
     <div class="header-container">
       <div class="brand">
         <div class="brand-logo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <rect x="2" y="4" width="20" height="16" rx="5"/>
-            <circle cx="8" cy="12" r="3" fill="currentColor"/>
-            <path d="M13 10h5M13 14h3" stroke-linecap="round"/>
+          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="64" height="64" fill="none" viewBox="0 0 64 64">
+            <defs>
+              <linearGradient id="brand-logo-bg" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#3388ff"/>
+                <stop offset="1" stop-color="#005eff"/>
+              </linearGradient>
+            </defs>
+            <rect width="64" height="64" fill="url(#brand-logo-bg)" rx="8"/>
+            <rect width="62" height="62" x="1" y="1" stroke="#ffffff" stroke-opacity=".15" stroke-width="2" rx="7"/>
+            <svg x="15" y="15" width="34" height="34" viewBox="0 0 320 512" fill="#ffffff" xmlns="http://www.w3.org/2000/svg"><path d="M64 32C28.7 32 0 60.7 0 96L0 256 0 416c0 35.3 28.7 64 64 64l128 0c70.7 0 128-57.3 128-128c0-46.5-24.8-87.3-62-109.7c18.7-22.3 30-51 30-82.3c0-70.7-57.3-128-128-128L64 32zm96 192l-96 0L64 96l96 0c35.3 0 64 28.7 64 64s-28.7 64-64 64zM64 288l96 0 32 0c35.3 0 64 28.7 64 64s-28.7 64-64 64L64 416l0-128z"/></svg>
           </svg>
         </div>
         <div class="brand-text">
@@ -161,6 +167,13 @@
             <span class="section-title">3. Logo & Icon Upload (PNG, JPG, SVG)</span>
           </div>
 
+          <!-- Logo Position Segmented Tabs -->
+          <div class="segmented-control">
+            <button class="seg-btn active" id="seg-pos-left" onclick="setLogoPosition('left')">Logo Left</button>
+            <button class="seg-btn" id="seg-pos-right" onclick="setLogoPosition('right')">Logo Right</button>
+            <button class="seg-btn" id="seg-pos-none" onclick="setLogoPosition('none')">No Logo</button>
+          </div>
+
           <!-- Icon Source Segmented Tabs -->
           <div class="segmented-control">
             <button class="seg-btn active" id="seg-preset" onclick="setIconMode('preset')">Preset Icons</button>
@@ -171,7 +184,7 @@
 
           <!-- Mode 1: Preset Icons -->
           <div id="icon-mode-preset" class="mode-container">
-            <select id="preset-select" class="input-text" onchange="renderBadge()">
+            <select id="preset-select" class="input-text" onchange="onPresetSelect()">
               <option value="github">GitHub Octocat</option>
               <option value="discord">Discord</option>
               <option value="python">Python</option>
@@ -197,7 +210,7 @@
             <div class="field-group">
               <label for="fa-icon-input">FontAwesome Icon (paste tag or classes)</label>
               <input type="text" id="fa-icon-input" class="input-text" placeholder='fa-brands fa-github  or  <i class="fa-brands fa-github"></i>' oninput="updateFontAwesomePreview(); renderBadge();" value="fa-brands fa-github">
-              <span style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.25rem;">Browse icons at <a href="https://fontawesome.com/icons" target="_blank" style="color: var(--accent-cyan);">fontawesome.com/icons</a></span>
+              <span style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.25rem;">Browse icons at <a href="https://fontawesome.com/icons" target="_blank" style="color: var(--accent);">fontawesome.com/icons</a></span>
             </div>
             <div class="fa-preview" id="fa-preview" style="margin-top: 0.75rem; padding: 1rem; background: var(--bg-input); border-radius: var(--radius-sm); text-align: center;">
               <i class="fa-brands fa-github" style="font-size: 48px; color: var(--text-primary);"></i>

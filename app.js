@@ -7,7 +7,8 @@ const state = {
   style: 'cozy', // 'cozy' | 'compact' | 'cozy-minimal' | 'compact-minimal'
   topText: 'Available on',
   bottomText: 'GitHub',
-  iconMode: 'preset', // 'preset' | 'upload' | 'raw'
+  iconMode: 'preset', // 'preset' | 'fontawesome' | 'upload' | 'raw'
+  logoPosition: 'left', // 'left' | 'right' | 'none'
   presetKey: 'github',
   uploadedDataUrl: '', // base64 DataURL for PNG/JPG/SVG
   isUploadedSvg: false,
@@ -27,19 +28,23 @@ const state = {
 const OFFICIAL_BRAND_ICONS = {
   github: {
     isCustomSvg: true,
+    scalable: true, // honor the icon-size slider (scaled from the 64px artboard like vector paths)
+    scalableBox: { x: 12, y: 12, w: 40, h: 40 }, // crop glyph whitespace so the mark fills the slider size
+    defaultScale: 41, // slider default: matches the glyph's pre-crop size
     svg: `<path fill="#ffffff" d="M32.001 12.716C20.951 12.716 12 21.573 12 32.488c0 8.741 5.73 16.15 13.672 18.763 1.004.187 1.366-.425 1.366-.954 0-.47-.01-1.711-.018-3.36-5.567 1.192-6.74-2.658-6.74-2.658-.91-2.279-2.226-2.89-2.226-2.89-1.81-1.223.144-1.197.144-1.197 2.005.135 3.06 2.033 3.06 2.033 1.784 3.025 4.68 2.15 5.827 1.641.175-1.274.696-2.15 1.264-2.638-4.44-.496-9.11-2.195-9.11-9.772 0-2.163.775-3.926 2.057-5.31-.222-.495-.9-2.51.176-5.233 0 0 1.674-.528 5.5 2.027a19.5 19.5 0 0 1 5-.668c1.7.011 3.4.231 5 .669 3.805-2.556 5.477-2.028 5.477-2.028 1.074 2.723.397 4.736.202 5.233 1.268 1.384 2.044 3.148 2.044 5.31 0 7.594-4.676 9.269-9.121 9.752.695.592 1.346 1.81 1.346 3.657 0 2.644-.025 4.775-.025 5.419 0 .514.35 1.132 1.38.933C46.275 48.63 52 41.216 52 32.487c0-10.916-8.952-19.773-20.001-19.773z"/>`,
-    textX: 62,
     color: '#ffffff',
     bgTop: '#181f29',
     bgBot: '#0f131a'
   },
   python: {
     isCustomSvg: true,
+    scalable: true, // honor the icon-size slider (scaled from the 64px artboard like vector paths)
+    scalableBox: { x: 12, y: 12, w: 40, h: 39 }, // crop glyph whitespace so the mark fills the slider size
+    defaultScale: 41, // slider default: matches the glyph's pre-crop size
     svg: `
       <path fill="#306998" d="M31.762 12a28 28 0 0 0-4.61.39c-4.083.713-4.825 2.206-4.825 4.96v3.637h9.648v1.212H18.708c-2.805 0-5.26 1.667-6.028 4.838-.886 3.635-.925 5.904 0 9.699.686 2.825 2.324 4.838 5.128 4.838h3.317v-4.36c0-3.15 2.756-5.928 6.028-5.928h9.636c2.683 0 4.824-2.185 4.824-4.85V17.35c0-2.586-2.205-4.529-4.824-4.96A30.4 30.4 0 0 0 31.762 12m-5.218 2.925c.997 0 1.81.818 1.81 1.824a1.81 1.81 0 1 1-3.62 0c0-1.005.81-1.824 1.81-1.824"/>
       <path fill="#FFE873" d="M42.816 22.2v4.237c0 3.285-2.816 6.05-6.028 6.05h-9.636c-2.64 0-4.825 2.235-4.825 4.85v9.086c0 2.586 2.274 4.107 4.824 4.85 3.055.887 5.983 1.048 9.637 0 2.43-.696 4.824-2.096 4.824-4.85v-3.637h-9.637v-1.212h14.462c2.803 0 3.848-1.935 4.824-4.838 1.007-2.99.964-5.864 0-9.699-.693-2.76-2.017-4.838-4.824-4.838zm-5.42 23.01c1 0 1.81.811 1.81 1.814 0 1.006-.81 1.824-1.81 1.824a1.82 1.82 0 0 1-1.81-1.824c0-1.003.813-1.813 1.81-1.813"/>
     `,
-    textX: 62,
     color: '#FFE873',
     bgTop: '#152b3e',
     bgBot: '#282208'
@@ -58,6 +63,9 @@ const OFFICIAL_BRAND_ICONS = {
   },
   react: {
     isCustomSvg: true,
+    scalable: true, // honor the icon-size slider (scaled from the 64px artboard like vector paths)
+    scalableBox: { x: 15.5, y: 15.5, w: 33, h: 33 }, // crop glyph whitespace so the mark fills the slider size
+    defaultScale: 41, // slider default: matches the glyph's pre-crop size
     svg: `
       <g transform="translate(32, 32) scale(1.5)">
         <circle cx="0" cy="0" r="2.05" fill="#61dafb"/>
@@ -68,7 +76,6 @@ const OFFICIAL_BRAND_ICONS = {
         </g>
       </g>
     `,
-    textX: 62,
     color: '#61DAFB',
     bgTop: '#132230',
     bgBot: '#0b1620'
@@ -86,10 +93,13 @@ const OFFICIAL_BRAND_ICONS = {
     bgBot: "#0e1014"
   },
   rust: {
-    path: "M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm0 4a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm-3 4v8h6v-2h-4v-2h3v-2h-3V10h4V8H9z",
-    color: "#DEA584",
-    bgTop: "#2b211a",
-    bgBot: "#17120e"
+    isCustomSvg: true,
+    scalable: true, // honor the icon-size slider (scaled from the 64px artboard like vector paths)
+    noTint: true, // stroke/mask-based artwork; tinting via the alpha filter only
+    svg: `<g transform="translate(32, 32) scale(0.6)"><path transform="translate(0.5, 0.5)" stroke="#ffffff" stroke-width="1" stroke-linejoin="round" d="M -9,-15 H 4 C 12,-15 12,-7 4,-7 H -9 Z M -40,22 H 0 V 11 H -9 V 3 H 1 C 12,3 6,22 15,22 H 40 V 3 H 34 V 5 C 34,13 25,12 24,7 C 23,2 19,-2 18,-2 C 33,-10 24,-26 12,-26 H -35 V -15 H -25 V 11 H -40 Z"/><g mask="url(#rust-holes)"><circle r="43" fill="none" stroke="#ffffff" stroke-width="9"/><g id="cogs"><polygon id="rust-cog" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" points="46,3 51,0 46,-3"/><use xlink:href="#rust-cog" transform="rotate(11.25)"/><use xlink:href="#rust-cog" transform="rotate(22.50)"/><use xlink:href="#rust-cog" transform="rotate(33.75)"/><use xlink:href="#rust-cog" transform="rotate(45.00)"/><use xlink:href="#rust-cog" transform="rotate(56.25)"/><use xlink:href="#rust-cog" transform="rotate(67.50)"/><use xlink:href="#rust-cog" transform="rotate(78.75)"/><use xlink:href="#rust-cog" transform="rotate(90.00)"/><use xlink:href="#rust-cog" transform="rotate(101.25)"/><use xlink:href="#rust-cog" transform="rotate(112.50)"/><use xlink:href="#rust-cog" transform="rotate(123.75)"/><use xlink:href="#rust-cog" transform="rotate(135.00)"/><use xlink:href="#rust-cog" transform="rotate(146.25)"/><use xlink:href="#rust-cog" transform="rotate(157.50)"/><use xlink:href="#rust-cog" transform="rotate(168.75)"/><use xlink:href="#rust-cog" transform="rotate(180.00)"/><use xlink:href="#rust-cog" transform="rotate(191.25)"/><use xlink:href="#rust-cog" transform="rotate(202.50)"/><use xlink:href="#rust-cog" transform="rotate(213.75)"/><use xlink:href="#rust-cog" transform="rotate(225.00)"/><use xlink:href="#rust-cog" transform="rotate(236.25)"/><use xlink:href="#rust-cog" transform="rotate(247.50)"/><use xlink:href="#rust-cog" transform="rotate(258.75)"/><use xlink:href="#rust-cog" transform="rotate(270.00)"/><use xlink:href="#rust-cog" transform="rotate(281.25)"/><use xlink:href="#rust-cog" transform="rotate(292.50)"/><use xlink:href="#rust-cog" transform="rotate(303.75)"/><use xlink:href="#rust-cog" transform="rotate(315.00)"/><use xlink:href="#rust-cog" transform="rotate(326.25)"/><use xlink:href="#rust-cog" transform="rotate(337.50)"/><use xlink:href="#rust-cog" transform="rotate(348.75)"/></g><g id="mounts"><polygon id="rust-mount" stroke="#ffffff" stroke-width="6" stroke-linejoin="round" points="-7,-42 0,-35 7,-42"/><use xlink:href="#rust-mount" transform="rotate(72)"/><use xlink:href="#rust-mount" transform="rotate(144)"/><use xlink:href="#rust-mount" transform="rotate(216)"/><use xlink:href="#rust-mount" transform="rotate(288)"/></g></g><mask id="rust-holes"><rect x="-60" y="-60" width="120" height="120" fill="#ffffff"/><circle id="rust-hole" cy="-40" r="3"/><use xlink:href="#rust-hole" transform="rotate(72)"/><use xlink:href="#rust-hole" transform="rotate(144)"/><use xlink:href="#rust-hole" transform="rotate(216)"/><use xlink:href="#rust-hole" transform="rotate(288)"/></mask></g>`,
+    color: '#ffffff',
+    bgTop: '#2b211a',
+    bgBot: '#17120e'
   },
   git: {
     path: "M23.546 10.93L13.067.452c-.604-.603-1.582-.603-2.188 0L8.708 2.627l2.76 2.76c.645-.215 1.379-.07 1.889.441.516.515.658 1.258.438 1.9l2.658 2.66c.645-.223 1.387-.078 1.9.435.721.72.721 1.884 0 2.604-.719.719-1.881.719-2.6 0-.539-.541-.674-1.337-.404-1.996L12.86 8.955v6.525c.176.086.342.203.488.348.713.721.713 1.883 0 2.6-.719.721-1.889.721-2.609 0-.719-.719-.719-1.879 0-2.598.182-.18.387-.316.605-.406V8.835c-.217-.091-.424-.222-.6-.401-.545-.545-.676-1.342-.396-2.009L7.636 3.7.45 10.881c-.6.605-.6 1.584 0 2.189l10.48 10.477c.604.604 1.582.604 2.186 0l10.43-10.43c.605-.603.605-1.582 0-2.187",
@@ -155,6 +165,8 @@ const OFFICIAL_BRAND_ICONS = {
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
+  // Apply the default preset's preferred icon-size slider before the first render
+  applyIconScaleDefault(document.getElementById('preset-select').value);
   // Wait for fonts to load before initial render
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(() => {
@@ -165,6 +177,24 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(renderBadge, 100);
   }
 });
+
+// Apply a preset's preferred icon-size slider default (github/python/react default to 41 so the
+// cropped glyph matches its pre-crop size). Presets without `defaultScale` leave the slider alone.
+function applyIconScaleDefault(presetKey) {
+  const info = OFFICIAL_BRAND_ICONS[presetKey];
+  if (info && info.defaultScale) {
+    const slider = document.getElementById('icon-scale-slider');
+    if (slider) slider.value = String(info.defaultScale);
+    const label = document.getElementById('icon-scale-num');
+    if (label) label.innerText = `${info.defaultScale}px`;
+  }
+}
+
+// Preset dropdown change handler
+function onPresetSelect() {
+  applyIconScaleDefault(document.getElementById('preset-select').value);
+  renderBadge();
+}
 
 // Set Active Style Variant
 function setStyle(styleName) {
@@ -193,6 +223,15 @@ function setIconMode(mode) {
     updateFontAwesomePreview();
   }
 
+  renderBadge();
+}
+
+// Logo Position Switcher (left / right / none)
+function setLogoPosition(pos) {
+  state.logoPosition = pos;
+  document.getElementById('seg-pos-left').classList.toggle('active', pos === 'left');
+  document.getElementById('seg-pos-right').classList.toggle('active', pos === 'right');
+  document.getElementById('seg-pos-none').classList.toggle('active', pos === 'none');
   renderBadge();
 }
 
@@ -370,6 +409,7 @@ function applyPreset(type) {
   document.getElementById('top-text').value = p.top;
   document.getElementById('bottom-text').value = p.bottom;
   document.getElementById('preset-select').value = p.icon;
+  applyIconScaleDefault(p.icon);
   if (brandInfo) {
     document.getElementById('bg-color-top').value = brandInfo.bgTop;
     document.getElementById('bg-color-bottom').value = brandInfo.bgBot;
@@ -451,6 +491,21 @@ function renderBadge() {
   // Scale factor based on badge height relative to 64px Cozy baseline
   const heightScale = height / 64;
 
+  // Logo position: 'left' | 'right' | 'none'
+  const noLogo = state.logoPosition === 'none';
+  const logoOnRight = state.logoPosition === 'right';
+  const leftPad = Math.round(12 * heightScale);
+
+  // No-logo mode: bigger, centered text
+  if (noLogo) {
+    if (isSingleLine) {
+      bottomFont = '700 16px Inter, -apple-system, sans-serif';
+    } else {
+      topFont = '500 15px Inter, -apple-system, sans-serif';
+      bottomFont = '700 26px Inter, -apple-system, sans-serif';
+    }
+  }
+
   // Update slider displays & hex swatches safely
   state.showDisk = showDisk;
   if (document.getElementById('disk-size-num')) document.getElementById('disk-size-num').innerText = `${diskDiameter}px`;
@@ -469,20 +524,36 @@ function renderBadge() {
   // Scaled logo size & Text X calculation:
   const effectiveLogoSize = Math.round(userLogoScale * heightScale);
 
-  let textX = 62;
-  if (brandInfo && brandInfo.textX && state.iconMode === 'preset') {
-    textX = Math.round(brandInfo.textX * heightScale);
-  } else {
-    textX = Math.round((12 + userLogoScale + 12) * heightScale);
+  // Custom-SVG presets normally draw on a full 64px artboard (the size slider is ignored),
+  // so reserve the full artboard width for spacing math. Icons marked `scalable` (e.g. rust)
+  // behave like vector paths: they honor the icon-size slider and only reserve effectiveLogoSize.
+  const isCustomArtboard = state.iconMode === 'preset' && brandInfo.isCustomSvg && !brandInfo.scalable;
+  const logoReserve = isCustomArtboard ? 64 * heightScale : effectiveLogoSize;
+  // Mirror spacing for right mode: artboard icons draw flush to the logo-side edge (just like
+  // left mode, where the artboard starts at x=0). Vector/upload/FA logos get leftPad padding.
+  const logoBoxPad = isCustomArtboard ? 0 : leftPad;
+  // Right mode: where the logo box should start so the text↔logo and logo↔edge gaps mirror left mode.
+  let logoBoxStart = null;
+
+  let textX = 0;
+  const textCentered = noLogo;
+  if (!noLogo) {
+    if (logoOnRight) {
+      textX = leftPad;
+    } else if (brandInfo && brandInfo.textX && state.iconMode === 'preset') {
+      textX = Math.round(brandInfo.textX * heightScale);
+    } else {
+      textX = Math.round(leftPad + effectiveLogoSize + leftPad);
+    }
   }
 
   // Max badge width — beyond this, text compresses instead of growing the badge
   const MAX_BADGE_WIDTH = 420;
 
   let width = height;
+  let maxTextW = 0;
   if (!isMinimal) {
     const textCorrectionFactor = 0.98;
-    let maxTextW;
     if (isSingleLine) {
       maxTextW = bottomText ? measureText(bottomText, bottomFont) * textCorrectionFactor : 0;
     } else {
@@ -490,11 +561,34 @@ function renderBadge() {
       const bottomW = bottomText ? measureText(bottomText, bottomFont) * textCorrectionFactor : 0;
       maxTextW = Math.max(topW, bottomW);
     }
-    width = Math.min(Math.ceil(textX + maxTextW + paddingRight + 4), MAX_BADGE_WIDTH);
+    if (noLogo) {
+      width = Math.min(Math.ceil(maxTextW + leftPad * 2 + 4), MAX_BADGE_WIDTH);
+    } else if (logoOnRight) {
+      // Mirrored left-mode spacing: capture the left-mode layout (where the text would start if
+      // the logo were on the left) and flip it. This keeps the text↔logo and logo↔outer-edge gaps
+      // identical on both sides instead of stacking two full pads on top of the logo width.
+      let textXLeft;
+      if (brandInfo && brandInfo.textX && state.iconMode === 'preset') {
+        textXLeft = Math.round(brandInfo.textX * heightScale);
+      } else {
+        textXLeft = Math.round(leftPad + effectiveLogoSize + leftPad);
+      }
+      logoBoxStart = Math.round(leftPad + maxTextW + (textXLeft - (logoBoxPad + logoReserve)));
+      width = Math.min(Math.ceil(logoBoxStart + logoReserve + logoBoxPad), MAX_BADGE_WIDTH);
+    } else {
+      width = Math.min(Math.ceil(textX + maxTextW + paddingRight + 4), MAX_BADGE_WIDTH);
+    }
   }
 
   // How many px are actually available for text (used for textLength compression)
-  const availableTextWidth = width - textX - paddingRight - 4;
+  let availableTextWidth;
+  if (noLogo) {
+    availableTextWidth = width - leftPad * 2 - 4;
+  } else if (logoOnRight) {
+    availableTextWidth = Math.max(maxTextW, width - textX - logoBoxPad - 4);
+  } else {
+    availableTextWidth = width - textX - paddingRight - 4;
+  }
 
   // Text FX Controls
   const useTextGrad = document.getElementById('text-grad-toggle')?.checked || false;
@@ -558,40 +652,84 @@ function renderBadge() {
 
   svgMarkup += `  </defs>\n\n  <!-- Background Card Base -->\n  <rect width="${width}" height="${height}" fill="url(#badge-bg)" rx="${radius}"/>\n  <rect width="${width - 2}" height="${height - 2}" x="1" y="1" stroke="#ffffff" stroke-opacity=".15" stroke-width="2" rx="${Math.max(0, radius - 1)}"/>\n`;
 
-  // Optional White / Custom Circle Disk Background
-  if (showDisk) {
+  const logoFilterAttr = useLogoFxFilter ? ' filter="url(#badge-logo-fx)"' : '';
+
+  // Logo X placement: left (default), right (text on the left), or centered (minimal).
+  // Right mode mirrors left mode, so the logo box sits at logoBoxStart (or stays flush to the
+  // right edge if the badge hit MAX_BADGE_WIDTH).
+  const boxRightEdge = width - logoReserve - logoBoxPad;
+  const iconX = isMinimal
+    ? Math.round((height - effectiveLogoSize) / 2)
+    : (logoOnRight ? Math.round(logoBoxStart != null ? Math.min(logoBoxStart, boxRightEdge) : boxRightEdge) : leftPad);
+
+  // Custom-SVG artboards are 64px wide, so right-align the full artboard (same as iconX when right)
+  const iconXFull = isMinimal
+    ? height * (0.5 - 32 / 64)
+    : (logoOnRight ? Math.round(logoBoxStart != null ? Math.min(logoBoxStart, boxRightEdge) : boxRightEdge) : 0);
+
+  // Optional White / Custom Circle Disk Background (behind the logo)
+  if (showDisk && !noLogo) {
     const diskR = Math.round((diskDiameter * heightScale) / 2);
-    const diskCx = isMinimal ? Math.round(height / 2) : Math.round((12 + userLogoScale / 2) * heightScale);
+    const diskCx = isMinimal
+      ? Math.round(height / 2)
+      : (logoOnRight
+        ? Math.round(iconX + logoReserve / 2)
+        : Math.round((12 + userLogoScale / 2) * heightScale));
     const diskCy = Math.round(height / 2);
     svgMarkup += `  <!-- Background Disk Circle -->\n  <circle cx="${diskCx}" cy="${diskCy}" r="${diskR}" fill="${diskColor}"/>\n`;
   }
 
-  const logoFilterAttr = useLogoFxFilter ? ' filter="url(#badge-logo-fx)"' : '';
-
   // Render Icon / Logo with proportional height scaling
+  if (!noLogo) {
   if (state.iconMode === 'preset') {
     if (brandInfo.isCustomSvg) {
       let svgContent = brandInfo.svg;
-      svgContent = svgContent.replace(/fill="currentColor"/gi, `fill="${brandInfo.color || '#ffffff'}"`);
+      // noTint icons (e.g. mask/stroke-based artwork) skip internal recolor so masks stay intact;
+      // tinting still works through the alpha-based logo-fx filter.
+      if (!brandInfo.noTint) {
+        svgContent = svgContent.replace(/fill="currentColor"/gi, `fill="${brandInfo.color || '#ffffff'}"`);
 
-      if (showDisk) {
-        svgContent = svgContent.replace(/fill="[^"]*"/g, `fill="${logoColor}"`);
-      } else if (useCustomLogoColor) {
-        svgContent = svgContent.replace(/fill="[^"]*"/g, `fill="${customLogoColor}"`);
+        if (showDisk) {
+          svgContent = svgContent.replace(/fill="[^"]*"/g, `fill="${logoColor}"`);
+        } else if (useCustomLogoColor) {
+          svgContent = svgContent.replace(/fill="[^"]*"/g, `fill="${customLogoColor}"`);
+        }
       }
 
-      if (isMinimal) {
+      if (brandInfo.scalable) {
+        // Icons with `scalableBox` (e.g. github/python/react) honor the icon-size slider like
+        // vector paths EXCEPT they crop the artboard's internal whitespace so the visible glyph
+        // fills effectiveLogoSize exactly. Icons without a box (e.g. rust) scale the full 64px
+        // artboard to effectiveLogoSize, preserving their internal padding.
+        const bb = brandInfo.scalableBox;
+        const s = effectiveLogoSize / (bb ? bb.w : 64);
+        const logoBox = Math.round(effectiveLogoSize);
+        if (bb) {
+          const gx = height / 2 - (bb.x + bb.w / 2) * s;
+          const gy = height / 2 - (bb.y + bb.h / 2) * s;
+          if (isMinimal) {
+            svgMarkup += `  <!-- Official Custom Vector (Scalable Cropped, Minimal Centered) -->\n  <g transform="translate(${gx.toFixed(2)}, ${gy.toFixed(2)}) scale(${s.toFixed(6)})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+          } else {
+            svgMarkup += `  <!-- Official Custom Vector (Scalable Cropped, Sized) -->\n  <g transform="translate(${(iconX - bb.x * s).toFixed(2)}, ${gy.toFixed(2)}) scale(${s.toFixed(6)})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+          }
+        } else if (isMinimal) {
+          const off = Math.round((height - logoBox) / 2);
+          svgMarkup += `  <!-- Official Custom Vector (Scalable, Minimal Centered) -->\n  <g transform="translate(${off}, ${off}) scale(${s})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+        } else {
+          const off = Math.round((height - logoBox) / 2);
+          svgMarkup += `  <!-- Official Custom Vector (Scalable, Sized) -->\n  <g transform="translate(${iconX}, ${off}) scale(${s})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+        }
+      } else if (isMinimal) {
         const minimalScale = height / 64;
         const centerOffsetX = height * (0.5 - 32 / 64);
         svgMarkup += `  <!-- Official Custom Vector (Minimal Centered) -->\n  <g transform="translate(${centerOffsetX.toFixed(2)}, 0) scale(${minimalScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
       } else {
         // For cozy/compact styles, center vertically by translating Y by (height - 64*heightScale) / 2
         const yOffset = (height - 64 * heightScale) / 2;
-        svgMarkup += `  <!-- Official Custom Vector (Scaled) -->\n  <g transform="translate(0, ${yOffset.toFixed(2)}) scale(${heightScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+        svgMarkup += `  <!-- Official Custom Vector (Scaled) -->\n  <g transform="translate(${iconXFull}, ${yOffset.toFixed(2)}) scale(${heightScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
       }
     } else {
       const scaleFactor = effectiveLogoSize / 24;
-      const iconX = isMinimal ? Math.round((height - effectiveLogoSize) / 2) : Math.round(12 * heightScale);
       const iconY = Math.round((height - effectiveLogoSize) / 2);
       const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : brandInfo.color);
 
@@ -599,14 +737,12 @@ function renderBadge() {
     }
   } else if (state.iconMode === 'upload' && state.uploadedDataUrl) {
     const imgSize = effectiveLogoSize;
-    const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
     const imgY = Math.round((height - imgSize) / 2);
-    svgMarkup += `  <!-- Uploaded Image/SVG Logo -->\n  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
-  } else if (state.iconMode === 'fontawesome') {
+    svgMarkup += `  <!-- Uploaded Image/SVG Logo -->\n  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
+  } else if (state.iconMode === 'fontawesome' && !noLogo) {
     const rawFaInput = document.getElementById('fa-icon-input')?.value || 'fa-brands fa-github';
     const faIconClass = parseFontAwesomeInput(rawFaInput);
     const imgSize = effectiveLogoSize;
-    const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
     const imgY = Math.round((height - imgSize) / 2);
     const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : textColor);
 
@@ -638,7 +774,7 @@ function renderBadge() {
     svgMarkup += `</svg>`;
 
     // Commit with placeholder icon immediately so text shows up right away
-    const placeholderIcon = `<text x="${imgX + imgSize / 2}" y="${imgY + imgSize * 0.7}" fill="#ffffff" font-size="${imgSize}" font-family="sans-serif" text-anchor="middle" opacity="0.6">?</text>`;
+    const placeholderIcon = `<text x="${iconX + imgSize / 2}" y="${imgY + imgSize * 0.7}" fill="#ffffff" font-size="${imgSize}" font-family="sans-serif" text-anchor="middle" opacity="0.6">?</text>`;
     const withPlaceholder = svgMarkup.replace('<!-- FA_ICON_SLOT -->', placeholderIcon);
     document.getElementById('badge-stage').innerHTML = withPlaceholder;
     document.getElementById('badge-size-display').innerText = `${width} × ${height} px`;
@@ -647,7 +783,7 @@ function renderBadge() {
     // Async: fetch real icon and swap in
     extractFontAwesomeSvg(faIconClass).then((fa) => {
       if (!fa) return; // Leave the placeholder if icon not found
-      const realIcon = `<svg x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${fa.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${fa.pathData}"/></svg>`;
+      const realIcon = `<svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${fa.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${fa.pathData}"/></svg>`;
       const finalSvg = svgMarkup.replace('<!-- FA_ICON_SLOT -->', realIcon);
       document.getElementById('badge-stage').innerHTML = finalSvg;
       document.getElementById('badge-size-display').innerText = `${width} × ${height} px`;
@@ -657,13 +793,13 @@ function renderBadge() {
     return; // Text already committed above, async swap handles the icon
   } else if (state.iconMode === 'raw' && state.rawSvgDataUrl) {
     const imgSize = effectiveLogoSize;
-    const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
     const imgY = Math.round((height - imgSize) / 2);
-    svgMarkup += `  <!-- Raw Pasted SVG Logo -->\n  <image href="${state.rawSvgDataUrl}" xlink:href="${state.rawSvgDataUrl}" x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
+    svgMarkup += `  <!-- Raw Pasted SVG Logo -->\n  <image href="${state.rawSvgDataUrl}" xlink:href="${state.rawSvgDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
   } else {
-    const qX = isMinimal ? Math.round(height / 2) : Math.round(12 * heightScale + effectiveLogoSize / 2);
+    const qX = Math.round(iconX + effectiveLogoSize / 2);
     const qY = Math.round(height / 2 + effectiveLogoSize * 0.35);
     svgMarkup += `  <!-- Placeholder ? Icon -->\n  <text x="${qX}" y="${qY}" fill="#ffffff" font-family="Inter, -apple-system, sans-serif" font-size="${effectiveLogoSize}" font-weight="700" text-anchor="middle" opacity="0.6">?</text>\n`;
+  }
   }
 
   // Render Typography with Gradients & Stroke Outlines
@@ -677,7 +813,8 @@ function renderBadge() {
       const compactTextLenAttr = compactTextW > compactAvail
         ? `textLength="${compactAvail}" lengthAdjust="spacingAndGlyphs"`
         : '';
-      svgMarkup += `  <!-- 1-Line Text -->\n  <text x="${textX}" y="${height/2 + 5}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="700" ${compactTextLenAttr}>${escapeHtml(bottomText)}</text>\n`;
+      const compactAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
+      svgMarkup += `  <!-- 1-Line Text -->\n  <text ${compactAnchor} y="${height/2 + 5}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 16 : 13}" font-weight="700" ${compactTextLenAttr}>${escapeHtml(bottomText)}</text>\n`;
     } else {
       const topMeasured   = topText    ? measureText(topText,    topFont)    * 0.98 : 0;
       const bottomMeasured = bottomText ? measureText(bottomText, bottomFont) * 0.98 : 0;
@@ -685,13 +822,15 @@ function renderBadge() {
         const topTextLenAttr = topMeasured > availableTextWidth
           ? `textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"`
           : '';
-        svgMarkup += `  <text x="${textX}" y="${topY}" fill="#e0e0e0" ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="500" ${topTextLenAttr}>${escapeHtml(topText)}</text>\n`;
+        const topAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
+        svgMarkup += `  <text ${topAnchor} y="${topY}" fill="#e0e0e0" ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 15 : 13}" font-weight="500" ${topTextLenAttr}>${escapeHtml(topText)}</text>\n`;
       }
       if (bottomText) {
         const bottomTextLenAttr = bottomMeasured > availableTextWidth
           ? `textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"`
           : '';
-        svgMarkup += `  <text x="${textX}" y="${bottomY}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="21" font-weight="700" ${bottomTextLenAttr}>${escapeHtml(bottomText)}</text>\n`;
+        const bottomAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
+        svgMarkup += `  <text ${bottomAnchor} y="${bottomY}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 26 : 21}" font-weight="700" ${bottomTextLenAttr}>${escapeHtml(bottomText)}</text>\n`;
       }
     }
   }
@@ -845,20 +984,52 @@ function generateBadgeForStyle(styleName) {
   const heightScale = height / 64;
   const effectiveLogoSize = Math.round(userLogoScale * heightScale);
 
+  // Logo position: 'left' | 'right' | 'none'
+  const noLogo = state.logoPosition === 'none';
+  const logoOnRight = state.logoPosition === 'right';
+  const leftPad = Math.round(12 * heightScale);
+
+  if (noLogo) {
+    if (isSingleLine) {
+      bottomFont = '700 16px Inter, -apple-system, sans-serif';
+    } else {
+      topFont = '500 15px Inter, -apple-system, sans-serif';
+      bottomFont = '700 26px Inter, -apple-system, sans-serif';
+    }
+  }
+
   const presetKey = document.getElementById('preset-select').value;
   const brandInfo = OFFICIAL_BRAND_ICONS[presetKey] || OFFICIAL_BRAND_ICONS.github;
 
-  let textX = 62;
-  if (brandInfo && brandInfo.textX && state.iconMode === 'preset') {
-    textX = Math.round(brandInfo.textX * heightScale);
-  } else {
-    textX = Math.round((12 + userLogoScale + 12) * heightScale);
+  // Custom-SVG presets normally draw on a full 64px artboard (the size slider is ignored),
+  // so reserve the full artboard width for spacing math. Icons marked `scalable` (e.g. rust)
+  // behave like vector paths: they honor the icon-size slider and only reserve effectiveLogoSize.
+  const isCustomArtboard = state.iconMode === 'preset' && brandInfo.isCustomSvg && !brandInfo.scalable;
+  const logoReserve = isCustomArtboard ? 64 * heightScale : effectiveLogoSize;
+  // Mirror spacing for right mode: artboard icons draw flush to the logo-side edge (just like
+  // left mode, where the artboard starts at x=0). Vector/upload/FA logos get leftPad padding.
+  const logoBoxPad = isCustomArtboard ? 0 : leftPad;
+  // Right mode: where the logo box should start so the text↔logo and logo↔edge gaps mirror left mode.
+  let logoBoxStart = null;
+
+  let textX = 0;
+  const textCentered = noLogo;
+  if (!noLogo) {
+    if (logoOnRight) {
+      textX = leftPad;
+    } else if (brandInfo && brandInfo.textX && state.iconMode === 'preset') {
+      textX = Math.round(brandInfo.textX * heightScale);
+    } else {
+      textX = Math.round(leftPad + effectiveLogoSize + leftPad);
+    }
   }
 
   let width = height;
+  let maxTextW = 0;
+  // Max badge width — beyond this, text compresses instead of growing the badge
+  const MAX_BADGE_WIDTH = 420;
   if (!isMinimal) {
     const textCorrectionFactor = 0.98;
-    let maxTextW;
     if (isSingleLine) {
       maxTextW = bottomText ? measureText(bottomText, bottomFont) * textCorrectionFactor : 0;
     } else {
@@ -866,7 +1037,32 @@ function generateBadgeForStyle(styleName) {
       const bottomW = bottomText ? measureText(bottomText, bottomFont) * textCorrectionFactor : 0;
       maxTextW = Math.max(topW, bottomW);
     }
-    width = Math.ceil(textX + maxTextW + paddingRight + 4);
+    if (noLogo) {
+      width = Math.ceil(maxTextW + leftPad * 2 + 4);
+    } else if (logoOnRight) {
+      // Mirrored left-mode spacing: capture the left-mode layout (where the text would start if
+      // the logo were on the left) and flip it. This keeps the text↔logo and logo↔outer-edge gaps
+      // identical on both sides instead of stacking two full pads on top of the logo width.
+      let textXLeft;
+      if (brandInfo && brandInfo.textX && state.iconMode === 'preset') {
+        textXLeft = Math.round(brandInfo.textX * heightScale);
+      } else {
+        textXLeft = Math.round(leftPad + effectiveLogoSize + leftPad);
+      }
+      logoBoxStart = Math.round(leftPad + maxTextW + (textXLeft - (logoBoxPad + logoReserve)));
+      width = Math.min(Math.ceil(logoBoxStart + logoReserve + logoBoxPad), MAX_BADGE_WIDTH);
+    } else {
+      width = Math.ceil(textX + maxTextW + paddingRight + 4);
+    }
+  }
+
+  let availableTextWidth;
+  if (noLogo) {
+    availableTextWidth = width - leftPad * 2 - 4;
+  } else if (logoOnRight) {
+    availableTextWidth = Math.max(maxTextW, width - textX - logoBoxPad - 4);
+  } else {
+    availableTextWidth = width - textX - paddingRight - 4;
   }
 
   const useTextGrad = document.getElementById('text-grad-toggle')?.checked || false;
@@ -919,38 +1115,82 @@ function generateBadgeForStyle(styleName) {
 
   svgMarkup += `  </defs>\n\n  <rect width="${width}" height="${height}" fill="url(#badge-bg-${styleName})" rx="${radius}"/>\n  <rect width="${width - 2}" height="${height - 2}" x="1" y="1" stroke="#ffffff" stroke-opacity=".15" stroke-width="2" rx="${Math.max(0, radius - 1)}"/>\n`;
 
-  if (showDisk) {
+  const logoFilterAttr = useLogoFxFilter ? ` filter="url(#badge-logo-fx-${styleName})"` : '';
+
+  // Logo X placement: left (default), right (text on the left), or centered (minimal).
+  // Right mode mirrors left mode, so the logo box sits at logoBoxStart (or stays flush to the
+  // right edge if the badge hit MAX_BADGE_WIDTH).
+  const boxRightEdge = width - logoReserve - logoBoxPad;
+  const iconX = isMinimal
+    ? Math.round((height - effectiveLogoSize) / 2)
+    : (logoOnRight ? Math.round(logoBoxStart != null ? Math.min(logoBoxStart, boxRightEdge) : boxRightEdge) : leftPad);
+
+  // Custom-SVG artboards are 64px wide, so right-align the full artboard (same as iconX when right)
+  const iconXFull = isMinimal
+    ? height * (0.5 - 32 / 64)
+    : (logoOnRight ? Math.round(logoBoxStart != null ? Math.min(logoBoxStart, boxRightEdge) : boxRightEdge) : 0);
+
+  if (showDisk && !noLogo) {
     const diskR = Math.round((diskDiameter * heightScale) / 2);
-    const diskCx = isMinimal ? Math.round(height / 2) : Math.round((12 + userLogoScale / 2) * heightScale);
+    const diskCx = isMinimal
+      ? Math.round(height / 2)
+      : (logoOnRight
+        ? Math.round(iconX + logoReserve / 2)
+        : Math.round((12 + userLogoScale / 2) * heightScale));
     const diskCy = Math.round(height / 2);
     svgMarkup += `  <circle cx="${diskCx}" cy="${diskCy}" r="${diskR}" fill="${diskColor}"/>\n`;
   }
 
-  const logoFilterAttr = useLogoFxFilter ? ` filter="url(#badge-logo-fx-${styleName})"` : '';
-
   // Render Icon
+  if (!noLogo) {
   if (state.iconMode === 'preset') {
     if (brandInfo.isCustomSvg) {
       let svgContent = brandInfo.svg;
-      svgContent = svgContent.replace(/fill="currentColor"/gi, `fill="${brandInfo.color || '#ffffff'}"`);
+      // noTint icons (e.g. mask/stroke-based artwork) skip internal recolor so masks stay intact;
+      // tinting still works through the alpha-based logo-fx filter.
+      if (!brandInfo.noTint) {
+        svgContent = svgContent.replace(/fill="currentColor"/gi, `fill="${brandInfo.color || '#ffffff'}"`);
 
-      if (showDisk) {
-        svgContent = svgContent.replace(/fill="[^"]*"/g, `fill="${logoColor}"`);
-      } else if (useCustomLogoColor) {
-        svgContent = svgContent.replace(/fill="[^"]*"/g, `fill="${customLogoColor}"`);
+        if (showDisk) {
+          svgContent = svgContent.replace(/fill="[^"]*"/g, `fill="${logoColor}"`);
+        } else if (useCustomLogoColor) {
+          svgContent = svgContent.replace(/fill="[^"]*"/g, `fill="${customLogoColor}"`);
+        }
       }
 
-      if (isMinimal) {
+      if (brandInfo.scalable) {
+        // Icons with `scalableBox` (e.g. github/python/react) honor the icon-size slider like
+        // vector paths EXCEPT they crop the artboard's internal whitespace so the visible glyph
+        // fills effectiveLogoSize exactly. Icons without a box (e.g. rust) scale the full 64px
+        // artboard to effectiveLogoSize, preserving their internal padding.
+        const bb = brandInfo.scalableBox;
+        const s = effectiveLogoSize / (bb ? bb.w : 64);
+        const logoBox = Math.round(effectiveLogoSize);
+        if (bb) {
+          const gx = height / 2 - (bb.x + bb.w / 2) * s;
+          const gy = height / 2 - (bb.y + bb.h / 2) * s;
+          if (isMinimal) {
+            svgMarkup += `  <!-- Official Custom Vector (Scalable Cropped, Minimal Centered) -->\n  <g transform="translate(${gx.toFixed(2)}, ${gy.toFixed(2)}) scale(${s.toFixed(6)})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+          } else {
+            svgMarkup += `  <!-- Official Custom Vector (Scalable Cropped, Sized) -->\n  <g transform="translate(${(iconX - bb.x * s).toFixed(2)}, ${gy.toFixed(2)}) scale(${s.toFixed(6)})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+          }
+        } else if (isMinimal) {
+          const off = Math.round((height - logoBox) / 2);
+          svgMarkup += `  <!-- Official Custom Vector (Scalable, Minimal Centered) -->\n  <g transform="translate(${off}, ${off}) scale(${s})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+        } else {
+          const off = Math.round((height - logoBox) / 2);
+          svgMarkup += `  <!-- Official Custom Vector (Scalable, Sized) -->\n  <g transform="translate(${iconX}, ${off}) scale(${s})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+        }
+      } else if (isMinimal) {
         const minimalScale = height / 64;
         const centerOffsetX = height * (0.5 - 32 / 64);
         svgMarkup += `  <g transform="translate(${centerOffsetX.toFixed(2)}, 0) scale(${minimalScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
       } else {
         const yOffset = (height - 64 * heightScale) / 2;
-        svgMarkup += `  <g transform="translate(0, ${yOffset.toFixed(2)}) scale(${heightScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
+        svgMarkup += `  <g transform="translate(${iconXFull}, ${yOffset.toFixed(2)}) scale(${heightScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
       }
     } else {
       const scaleFactor = effectiveLogoSize / 24;
-      const iconX = isMinimal ? Math.round((height - effectiveLogoSize) / 2) : Math.round(12 * heightScale);
       const iconY = Math.round((height - effectiveLogoSize) / 2);
       const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : brandInfo.color);
 
@@ -958,17 +1198,16 @@ function generateBadgeForStyle(styleName) {
     }
   } else if (state.iconMode === 'upload' && state.uploadedDataUrl) {
     const imgSize = effectiveLogoSize;
-    const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
     const imgY = Math.round((height - imgSize) / 2);
-    svgMarkup += `  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
-  } else if (state.iconMode === 'fontawesome') {
+    svgMarkup += `  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
+  } else if (state.iconMode === 'fontawesome' && !noLogo) {
     // Slot replaced by getResolvedSvg() in createGitHubIssue before canvas render
     svgMarkup += `  <!-- FA_ICON_SLOT -->\n`;
   } else if (state.iconMode === 'raw' && state.rawSvgDataUrl) {
     const imgSize = effectiveLogoSize;
-    const imgX = isMinimal ? Math.round((height - imgSize) / 2) : Math.round(12 * heightScale);
     const imgY = Math.round((height - imgSize) / 2);
-    svgMarkup += `  <image href="${state.rawSvgDataUrl}" xlink:href="${state.rawSvgDataUrl}" x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
+    svgMarkup += `  <image href="${state.rawSvgDataUrl}" xlink:href="${state.rawSvgDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
+  }
   }
 
   const textFillAttr = useTextGrad ? `fill="url(#badge-text-grad-${styleName})"` : `fill="${textColor}"`;
@@ -976,13 +1215,16 @@ function generateBadgeForStyle(styleName) {
 
   if (!isMinimal) {
     if (isSingleLine) {
-      svgMarkup += `  <text x="${textX}" y="${height/2 + 5}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="700">${escapeHtml(bottomText)}</text>\n`;
+      const singleAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
+      svgMarkup += `  <text ${singleAnchor} y="${height/2 + 5}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 16 : 13}" font-weight="700">${escapeHtml(bottomText)}</text>\n`;
     } else {
       if (topText) {
-        svgMarkup += `  <text x="${textX}" y="${topY}" fill="#e0e0e0" ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="500">${escapeHtml(topText)}</text>\n`;
+        const topAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
+        svgMarkup += `  <text ${topAnchor} y="${topY}" fill="#e0e0e0" ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 15 : 13}" font-weight="500">${escapeHtml(topText)}</text>\n`;
       }
       if (bottomText) {
-        svgMarkup += `  <text x="${textX}" y="${bottomY}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="21" font-weight="700">${escapeHtml(bottomText)}</text>\n`;
+        const bottomAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
+        svgMarkup += `  <text ${bottomAnchor} y="${bottomY}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 26 : 21}" font-weight="700">${escapeHtml(bottomText)}</text>\n`;
       }
     }
   }
@@ -1044,7 +1286,9 @@ function createGitHubIssue() {
   faIconPromise.then((faIcon) => {
     // Build "preferred icons/text" section
     let iconDescription = '';
-    if (state.iconMode === 'preset') {
+    if (state.logoPosition === 'none') {
+      iconDescription = 'No logo — text only';
+    } else if (state.iconMode === 'preset') {
       const presetKey = document.getElementById('preset-select').value;
       iconDescription = `Preset icon: **${presetKey}**`;
     } else if (state.iconMode === 'fontawesome') {
@@ -1089,12 +1333,15 @@ function createGitHubIssue() {
       // generateBadgeForStyle leaves <!-- FA_ICON_SLOT --> — resolve it now
       const wMatch = svg.match(/width="(\d+)"/);
       const hMatch = svg.match(/height="(\d+)"/);
+      const w = wMatch ? parseInt(wMatch[1]) : 164;
       const h = hMatch ? parseInt(hMatch[1]) : 64;
       const heightScale = h / 64;
       const userLogoScale = parseInt(document.getElementById('icon-scale-slider').value) || 34;
       const imgSize = Math.round(userLogoScale * heightScale);
       const isMinimal = styleName === 'cozy-minimal' || styleName === 'compact-minimal';
-      const imgX = isMinimal ? Math.round((h - imgSize) / 2) : Math.round(12 * heightScale);
+      const imgX = isMinimal
+        ? Math.round((h - imgSize) / 2)
+        : (state.logoPosition === 'right' ? Math.round(w - imgSize - Math.round(12 * heightScale)) : Math.round(12 * heightScale));
       const imgY = Math.round((h - imgSize) / 2);
       const fillColor = document.getElementById('text-color').value || '#ffffff';
       const realIcon = `<svg x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${faIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${faIcon.pathData}"/></svg>`;
@@ -1168,7 +1415,7 @@ ${exampleLines}`;
         .catch(() => showToast('Uploaded! But clipboard failed — copy the body manually.'));
 
       const title = encodeURIComponent(`${bottomText || badgePurpose} [NEW]`);
-      const url = `https://github.com/intergrav/devins-badges/issues/new?template=new-badge.md&title=${title}`;
+      const url = `https://github.com/intensed-dev/devinsbadges-customs/issues/new?template=new-badge.md&title=${title}`;
       window.open(url, '_blank');
     });
   });
@@ -1202,6 +1449,7 @@ function getBadgeConfig() {
     topText: document.getElementById('top-text')?.value || '',
     bottomText: document.getElementById('bottom-text')?.value || '',
     iconMode: state.iconMode,
+    logoPosition: state.logoPosition,
     presetKey: document.getElementById('preset-select')?.value || 'github',
     uploadedDataUrl: state.uploadedDataUrl || '',
     rawSvgDataUrl: state.rawSvgDataUrl || '',
@@ -1238,6 +1486,7 @@ function applyBadgeConfig(cfg) {
   if (cfg.topText !== undefined && document.getElementById('top-text')) document.getElementById('top-text').value = cfg.topText;
   if (cfg.bottomText !== undefined && document.getElementById('bottom-text')) document.getElementById('bottom-text').value = cfg.bottomText;
   if (cfg.iconMode) setIconMode(cfg.iconMode);
+  if (cfg.logoPosition) setLogoPosition(cfg.logoPosition);
   if (cfg.presetKey && document.getElementById('preset-select')) document.getElementById('preset-select').value = cfg.presetKey;
   
   if (cfg.uploadedDataUrl !== undefined) state.uploadedDataUrl = cfg.uploadedDataUrl;

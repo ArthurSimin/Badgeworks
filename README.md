@@ -18,11 +18,11 @@
 </p>
 
 <p align="center">
-  <strong>Note:</strong> If updates don’t appear, perform a hard refresh (Ctrl + F5).
+<strong>Note:</strong> If updates don’t appear, perform a hard refresh (Ctrl + F5).
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Arthur_Simin's-Badgeworks-blue?style=for-the-badge&logo=github" alt="Devin Badge Studio" />
+  <img src="https://img.shields.io/badge/Badgeworks-Badgeworks-3388ff?style=for-the-badge&logo=github" alt="Badgeworks" />
 </p>
 
 ## Features
