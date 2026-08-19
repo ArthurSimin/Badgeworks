@@ -1,0 +1,14 @@
+# Throwaway sample output (not a fixture)
+test_vscode.svg
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs & temp
+*.log
