@@ -392,6 +392,12 @@ body {
   color: var(--text-primary);
 }
 
+.dropzone.dragging {
+  border-color: var(--accent);
+  background: rgba(137, 180, 250, 0.09);
+  color: var(--text-primary);
+}
+
 .upload-hint {
   font-size: 0.7rem;
   color: var(--text-tertiary);
@@ -460,6 +466,10 @@ body {
   cursor: pointer;
 }
 
+.color-picker-wrap:has(input:disabled) {
+  opacity: 0.45;
+}
+
 .color-val {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.75rem;
@@ -479,6 +489,12 @@ body {
   font-weight: 600;
 }
 
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .checkbox-field label {
   display: flex;
   align-items: center;
@@ -487,7 +503,26 @@ body {
   color: var(--text-primary);
   font-size: 0.8rem;
   font-weight: 600;
-  margin-top: 1rem;
+}
+
+/* Small group labels inside a section */
+.sub-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  margin-top: 0.5rem;
+}
+
+/* Controls that depend on a toggle being on are dimmed + disabled */
+.fx-dim {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+input[disabled].fx-dim {
+  opacity: 0.4;
 }
 
 /* Stage & Preview Card */
@@ -672,6 +707,71 @@ body {
   color: #a6adc8;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+.bg-stop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.bg-stop-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+}
+
+.bg-stop-color {
+  width: 36px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.bg-stop-hex {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.bg-stop-remove {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(243, 139, 168, 0.12);
+  color: var(--accent-red);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.bg-stop-remove:hover:not(:disabled) {
+  background: rgba(243, 139, 168, 0.25);
+}
+
+.bg-stop-remove:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.bg-add-stop {
+  width: 100%;
+  font-size: 0.8rem;
 }
 
 /* Toast Notifications */

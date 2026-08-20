@@ -112,63 +112,97 @@
         <!-- Typography Section & Text FX -->
         <div class="panel-section">
           <div class="section-header">
-            <span class="section-title">2. Text Content & Text FX</span>
+            <span class="section-title">2. Text & Typography</span>
           </div>
           <div class="grid-2col">
             <div class="field-group">
-              <label for="top-text">Top Text (Subtitle)</label>
+              <label for="top-text">Subtitle (Top Text)</label>
               <input type="text" id="top-text" class="input-text" value="Available on" oninput="renderBadge()">
             </div>
             <div class="field-group">
-              <label for="bottom-text">Bottom Text (Main Title)</label>
+              <label for="bottom-text">Main Title (Bottom Text)</label>
               <input type="text" id="bottom-text" class="input-text" value="GitHub" oninput="renderBadge()">
             </div>
           </div>
 
-          <!-- Text FX: Gradients & Stroke Outline -->
-          <div class="grid-2col" style="margin-top: 0.75rem;">
+          <div class="sub-title">Text Effects</div>
+          <div class="grid-3col" style="margin-top: 0.4rem;">
             <div class="field-group checkbox-field">
               <label><input type="checkbox" id="text-grad-toggle" onchange="renderBadge()"> Text Gradient</label>
             </div>
             <div class="field-group checkbox-field">
-              <label><input type="checkbox" id="text-stroke-toggle" onchange="renderBadge()"> Text Outline / Stroke</label>
+              <label><input type="checkbox" id="text-stroke-toggle" onchange="renderBadge()"> Text Outline</label>
+            </div>
+            <div class="field-group checkbox-field">
+              <label><input type="checkbox" id="text-shadow-toggle" onchange="renderBadge()"> Text Shadow</label>
             </div>
           </div>
 
           <div class="grid-4col" style="margin-top: 0.45rem;">
             <div class="field-group">
-              <label for="text-grad-top">Grad Top</label>
+              <label for="text-grad-top">Top Color</label>
               <div class="color-picker-wrap">
                 <input type="color" id="text-grad-top" value="#61DAFB" onchange="renderBadge()">
+                <span class="color-val">#61DAFB</span>
               </div>
             </div>
             <div class="field-group">
-              <label for="text-grad-bot">Grad Bot</label>
+              <label for="text-grad-bot">Bottom Color</label>
               <div class="color-picker-wrap">
                 <input type="color" id="text-grad-bot" value="#FFFFFF" onchange="renderBadge()">
+                <span class="color-val">#FFFFFF</span>
               </div>
             </div>
             <div class="field-group">
-              <label for="text-stroke-color">Text Stroke</label>
+              <label for="text-stroke-color">Outline Color</label>
               <div class="color-picker-wrap">
                 <input type="color" id="text-stroke-color" value="#000000" onchange="renderBadge()">
+                <span class="color-val">#000000</span>
               </div>
             </div>
             <div class="field-group">
-              <label for="text-stroke-width">Width: <span id="text-stroke-val" class="slider-num">1.5px</span></label>
+              <label for="text-stroke-width">Outline Width: <span id="text-stroke-val" class="slider-num">1.5px</span></label>
               <input type="range" id="text-stroke-width" min="0.5" max="4" step="0.5" value="1.5" class="range-slider" oninput="renderBadge()">
+            </div>
+          </div>
+          <div class="grid-4col" style="margin-top: 0.45rem;">
+            <div class="field-group">
+              <label for="subtitle-color">Subtitle Color</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="subtitle-color" value="#e0e0e0" onchange="renderBadge()">
+                <span class="color-val">#E0E0E0</span>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="text-color">Main Title Color</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="text-color" value="#ffffff" onchange="renderBadge()">
+                <span class="color-val" id="text-hex">#FFFFFF</span>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="text-shadow-color">Shadow Color</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="text-shadow-color" value="#000000" onchange="renderBadge()">
+                <span class="color-val">#000000</span>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="text-shadow-blur">Shadow Blur: <span id="text-shadow-val" class="slider-num">2px</span></label>
+              <input type="range" id="text-shadow-blur" min="0" max="8" step="0.5" value="2" class="range-slider" oninput="renderBadge()">
             </div>
           </div>
         </div>
 
-        <!-- Logo & Icon Upload Section -->
+        <!-- Logo & Icon Section -->
         <div class="panel-section">
           <div class="section-header">
-            <span class="section-title">3. Logo & Icon Upload (PNG, JPG, SVG)</span>
+            <span class="section-title">3. Logo / Icon</span>
           </div>
 
+          <div class="sub-title">Position & Source</div>
           <!-- Logo Position Segmented Tabs -->
-          <div class="segmented-control">
+          <div class="segmented-control" style="margin-top: 0.4rem;">
             <button class="seg-btn active" id="seg-pos-left" onclick="setLogoPosition('left')">Logo Left</button>
             <button class="seg-btn" id="seg-pos-right" onclick="setLogoPosition('right')">Logo Right</button>
             <button class="seg-btn" id="seg-pos-none" onclick="setLogoPosition('none')">No Logo</button>
@@ -243,52 +277,73 @@
             <textarea id="raw-svg-code" class="input-text textarea-code" placeholder="Paste <svg>...</svg> code here..." oninput="handleRawSvgChange()"></textarea>
           </div>
 
-          <!-- Icon & Disk Size Sliders -->
-          <div class="grid-2col" style="margin-top: 0.85rem;">
+          <!-- Icon Size Sliders -->
+          <div class="sub-title">Icon Size</div>
+          <div class="grid-2col" style="margin-top: 0.4rem;">
             <div class="field-group">
-              <label for="icon-scale-slider">Pure Logo Size: <span id="icon-scale-num" class="slider-num">34px</span></label>
+              <label for="icon-scale-slider">Logo Size: <span id="icon-scale-num" class="slider-num">34px</span></label>
               <input type="range" id="icon-scale-slider" min="16" max="44" value="34" class="range-slider" oninput="renderBadge()">
             </div>
             <div class="field-group">
-              <label for="disk-size-slider">Circle Disk Size (Optional): <span id="disk-size-num" class="slider-num">40px</span></label>
+              <label for="disk-size-slider">Circle Size: <span id="disk-size-num" class="slider-num">40px</span></label>
               <input type="range" id="disk-size-slider" min="24" max="48" value="40" class="range-slider" oninput="renderBadge()">
             </div>
           </div>
 
-          <!-- Optional Disk, Logo Color & Stroke Customization -->
-          <div class="grid-3col" style="margin-top: 0.85rem;">
+          <!-- Icon Effects: Circle, Color, Outline & Shadow -->
+          <div class="sub-title">Icon Effects</div>
+          <div class="grid-4col" style="margin-top: 0.4rem;">
             <div class="field-group checkbox-field">
-              <label><input type="checkbox" id="show-disk-toggle" onchange="renderBadge()"> White Circle Disk</label>
+              <label><input type="checkbox" id="show-disk-toggle" onchange="renderBadge()"> Circle Behind Logo</label>
             </div>
             <div class="field-group checkbox-field">
               <label><input type="checkbox" id="custom-logo-color-toggle" onchange="renderBadge()"> Custom Logo Color</label>
             </div>
             <div class="field-group checkbox-field">
-              <label><input type="checkbox" id="logo-stroke-toggle" onchange="renderBadge()"> Logo Outline / Stroke</label>
+              <label><input type="checkbox" id="logo-stroke-toggle" onchange="renderBadge()"> Logo Outline</label>
+            </div>
+            <div class="field-group checkbox-field">
+              <label><input type="checkbox" id="logo-shadow-toggle" onchange="renderBadge()"> Logo Shadow</label>
             </div>
           </div>
           <div class="grid-4col" style="margin-top: 0.45rem;">
             <div class="field-group">
-              <label for="disk-color">Disk Color</label>
+              <label for="disk-color">Circle Color</label>
               <div class="color-picker-wrap">
                 <input type="color" id="disk-color" value="#ffffff" onchange="renderBadge()">
+                <span class="color-val">#FFFFFF</span>
               </div>
             </div>
             <div class="field-group">
               <label for="logo-color">Logo Color</label>
               <div class="color-picker-wrap">
                 <input type="color" id="logo-color" value="#ffffff" onchange="renderBadge()">
+                <span class="color-val">#FFFFFF</span>
               </div>
             </div>
             <div class="field-group">
-              <label for="logo-stroke-color">Logo Stroke</label>
+              <label for="logo-stroke-color">Outline Color</label>
               <div class="color-picker-wrap">
                 <input type="color" id="logo-stroke-color" value="#ffffff" onchange="renderBadge()">
+                <span class="color-val">#FFFFFF</span>
               </div>
             </div>
             <div class="field-group">
-              <label for="logo-stroke-width">Width: <span id="logo-stroke-val" class="slider-num">2px</span></label>
+              <label for="logo-stroke-width">Outline Width: <span id="logo-stroke-val" class="slider-num">2px</span></label>
               <input type="range" id="logo-stroke-width" min="1" max="6" step="0.5" value="2" class="range-slider" oninput="renderBadge()">
+            </div>
+          </div>
+          <div class="grid-4col" style="margin-top: 0.45rem;">
+            <div class="field-group">
+              <label for="logo-shadow-color">Shadow Color</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="logo-shadow-color" value="#000000" onchange="renderBadge()">
+                <span class="color-val">#000000</span>
+              </div>
+            </div>
+            <div class="field-group">
+              <label for="logo-shadow-blur">Shadow Blur: <span id="logo-shadow-val" class="slider-num">2px</span></label>
+              <input type="range" id="logo-shadow-blur" min="0" max="8" step="0.5" value="2" class="range-slider" oninput="renderBadge()">
             </div>
           </div>
         </div>
@@ -299,31 +354,33 @@
             <span class="section-title">4. Background & Dimensions</span>
           </div>
 
-          <div class="grid-3col">
+          <div class="sub-title">Background Gradient</div>
+          <div class="grid-2col" style="margin-top: 0.4rem;">
             <div class="field-group">
-              <label for="bg-color-top">Bg Top Color</label>
-              <div class="color-picker-wrap">
-                <input type="color" id="bg-color-top" value="#181f29" onchange="renderBadge()">
-                <span class="color-val" id="bg-top-hex">#181f29</span>
-              </div>
+              <label for="bg-grad-preset">Preset / Custom</label>
+              <select id="bg-grad-preset" class="input-text" onchange="onBgGradPresetSelect()">
+                <option value="custom">Custom</option>
+                <option value="rainbow">Rainbow</option>
+                <option value="rainbow-pastel">Rainbow Pastel</option>
+                <option value="ocean">Ocean</option>
+                <option value="sunset">Sunset</option>
+                <option value="fire">Fire</option>
+                <option value="forest">Forest</option>
+                <option value="synthwave">Synthwave</option>
+                <option value="grayscale">Grayscale</option>
+                <option value="candy">Candy</option>
+              </select>
             </div>
             <div class="field-group">
-              <label for="bg-color-bottom">Bg Bottom Color</label>
-              <div class="color-picker-wrap">
-                <input type="color" id="bg-color-bottom" value="#0f131a" onchange="renderBadge()">
-                <span class="color-val" id="bg-bot-hex">#0f131a</span>
-              </div>
-            </div>
-            <div class="field-group">
-              <label for="text-color">Logo & Text Color</label>
-              <div class="color-picker-wrap">
-                <input type="color" id="text-color" value="#ffffff" onchange="renderBadge()">
-                <span class="color-val" id="text-hex">#ffffff</span>
-              </div>
+              <label>&nbsp;</label>
+              <button type="button" class="btn btn-secondary bg-add-stop" id="bg-add-stop" onclick="addBgStop()">+ Add Stop</button>
             </div>
           </div>
+          <div class="bg-stop-list" id="bg-stop-list"></div>
+          <p class="upload-hint">2–7 gradient stops. Pick a preset or set your own colors.</p>
 
-          <div class="grid-2col" style="margin-top: 0.85rem;">
+          <div class="sub-title">Dimensions</div>
+          <div class="grid-2col" style="margin-top: 0.4rem;">
             <div class="field-group">
               <label for="corner-radius">Border Radius: <span id="radius-val" class="slider-num">8px</span></label>
               <input type="range" id="corner-radius" min="0" max="24" value="8" class="range-slider" oninput="renderBadge()">

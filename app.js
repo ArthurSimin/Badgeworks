@@ -12,12 +12,13 @@ const state = {
   presetKey: 'github',
   uploadedDataUrl: '', // base64 DataURL for PNG/JPG/SVG
   isUploadedSvg: false,
+  uploadFilename: '',
   customSvgContent: '',
   showDisk: false, // Default to FALSE for pure standalone logos!
   diskColor: '#ffffff',
   logoColor: '#0f141c',
-  bgColorTop: '#181f29',
-  bgColorBottom: '#0f131a',
+  bgStops: ['#181f29', '#0f131a'], // background gradient stops (2–7)
+  bgGradPreset: 'custom', // name of the currently-applied gradient preset ('custom' = manual)
   textColor: '#ffffff',
   radius: 8,
   paddingRight: 8,
@@ -167,6 +168,33 @@ const OFFICIAL_BRAND_ICONS = {
 document.addEventListener('DOMContentLoaded', () => {
   // Apply the default preset's preferred icon-size slider before the first render
   applyIconScaleDefault(document.getElementById('preset-select').value);
+
+  // Build the background gradient stop editor
+  renderBgStopEditor();
+
+  // Wire up drag & drop on the upload dropzone
+  const dropzone = document.getElementById('image-dropzone');
+  if (dropzone) {
+    ['dragover', 'dragenter'].forEach((evtName) => dropzone.addEventListener(evtName, (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragging');
+    }));
+    ['dragleave', 'dragend'].forEach((evtName) => dropzone.addEventListener(evtName, (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragging');
+    }));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragging');
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) processUploadedFile(file);
+    });
+  }
+
+  // Prevent the browser from navigating away when a file is dropped elsewhere on the page
+  document.addEventListener('dragover', (e) => e.preventDefault());
+  document.addEventListener('drop', (e) => e.preventDefault());
+
   // Wait for fonts to load before initial render
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(() => {
@@ -321,7 +349,10 @@ document.addEventListener('DOMContentLoaded', () => {
 function handleFileChange(e) {
   const file = e.target.files[0];
   if (!file) return;
+  processUploadedFile(file);
+}
 
+function processUploadedFile(file) {
   const reader = new FileReader();
 
   if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
@@ -354,6 +385,7 @@ function handleFileChange(e) {
 }
 
 function showUploadPreview(filename, dataUrl) {
+  state.uploadFilename = filename;
   document.getElementById('upload-preview-bar').style.display = 'flex';
   document.getElementById('upload-filename').innerText = filename;
   document.getElementById('upload-thumb').src = dataUrl;
@@ -364,6 +396,7 @@ function clearUpload() {
   state.uploadedDataUrl = '';
   state.rawSvgDataUrl = '';
   state.customSvgContent = '';
+  state.uploadFilename = '';
   document.getElementById('upload-preview-bar').style.display = 'none';
   document.getElementById('upload-status-text').innerText = 'Click to upload PNG, JPG, or SVG logo';
   document.getElementById('file-input').value = '';
@@ -411,8 +444,9 @@ function applyPreset(type) {
   document.getElementById('preset-select').value = p.icon;
   applyIconScaleDefault(p.icon);
   if (brandInfo) {
-    document.getElementById('bg-color-top').value = brandInfo.bgTop;
-    document.getElementById('bg-color-bottom').value = brandInfo.bgBot;
+    state.bgStops = [brandInfo.bgTop || '#181f29', brandInfo.bgBot || '#0f131a'];
+    setBgGradPresetSelect('custom');
+    renderBgStopEditor();
   }
 
   state.iconMode = 'preset';
@@ -446,16 +480,183 @@ function measureText(text, fontSpec) {
   return roundedWidth;
 }
 
+// Incremented on every render; lets async FontAwesome swaps detect (and skip) stale renders
+let renderToken = 0;
+
+// Background gradient presets (2–7 stops each)
+const BG_GRADIENT_PRESETS = {
+  rainbow: ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#007fff', '#0000ff', '#8b00ff'],
+  'rainbow-pastel': ['#ffb3ba', '#ffdfba', '#ffffba', '#baffc9', '#bae1ff', '#e8baff', '#ffb3e6'],
+  ocean: ['#0f2027', '#203a43', '#2c5364'],
+  sunset: ['#ff512f', '#f09819', '#dd2476', '#6a11cb'],
+  fire: ['#ff0000', '#ff4d00', '#ff9900', '#ffcc00', '#ffe066'],
+  forest: ['#134e5e', '#56ab2f', '#71b280'],
+  synthwave: ['#8e2de2', '#4a00e0', '#ff00cc', '#00e5ff'],
+  grayscale: ['#2b2b2b', '#4a4a4a', '#6f6f6f', '#999999', '#c2c2c2'],
+  candy: ['#fdfbfb', '#f6d365', '#fda085', '#fbc2eb']
+};
+const BG_GRADIENT_MAX_STOPS = 7;
+
+// Rebuild the background gradient stop editor rows from state.bgStops
+function renderBgStopEditor() {
+  const list = document.getElementById('bg-stop-list');
+  if (!list) return;
+  const sel = document.getElementById('bg-grad-preset');
+  if (sel) sel.value = state.bgGradPreset || 'custom';
+  list.innerHTML = '';
+
+  state.bgStops.forEach((hex, i) => {
+    const row = document.createElement('div');
+    row.className = 'bg-stop-row';
+
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.className = 'bg-stop-color';
+    colorInput.value = hex;
+
+    const hexLabel = document.createElement('span');
+    hexLabel.className = 'bg-stop-hex';
+    hexLabel.innerText = hex;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'bg-stop-remove';
+    removeBtn.title = 'Remove stop';
+    removeBtn.innerHTML = '&times;';
+    removeBtn.disabled = state.bgStops.length <= 2;
+
+    colorInput.addEventListener('input', () => {
+      const val = colorInput.value;
+      state.bgStops[i] = val;
+      hexLabel.innerText = val;
+      setBgGradPresetSelect('custom');
+      renderBadge();
+    });
+
+    removeBtn.addEventListener('click', () => {
+      if (state.bgStops.length <= 2) return;
+      state.bgStops.splice(i, 1);
+      setBgGradPresetSelect('custom');
+      renderBgStopEditor();
+      renderBadge();
+    });
+
+    row.appendChild(colorInput);
+    row.appendChild(hexLabel);
+    row.appendChild(removeBtn);
+    list.appendChild(row);
+  });
+
+  const addBtn = document.getElementById('bg-add-stop');
+  if (addBtn) addBtn.disabled = state.bgStops.length >= BG_GRADIENT_MAX_STOPS;
+}
+
+// Sync the preset dropdown + state with a given preset name
+function setBgGradPresetSelect(name) {
+  state.bgGradPreset = name;
+  const sel = document.getElementById('bg-grad-preset');
+  if (sel) sel.value = name;
+}
+
+// Preset dropdown change: apply the preset's stops (or leave stops untouched for 'custom')
+function onBgGradPresetSelect() {
+  const sel = document.getElementById('bg-grad-preset');
+  const name = sel ? sel.value : 'custom';
+  if (name !== 'custom' && BG_GRADIENT_PRESETS[name]) {
+    state.bgStops = BG_GRADIENT_PRESETS[name].slice();
+    renderBgStopEditor();
+  }
+  setBgGradPresetSelect(name);
+  renderBadge();
+}
+
+// Add another gradient stop (max 7)
+function addBgStop() {
+  if (state.bgStops.length >= BG_GRADIENT_MAX_STOPS) return;
+  state.bgStops.push('#ffffff');
+  setBgGradPresetSelect('custom');
+  renderBgStopEditor();
+  renderBadge();
+}
+
+// Live-sync the hex text next to every color picker (uppercased).
+function updateColorHexes() {
+  document.querySelectorAll('.color-val').forEach(span => {
+    const wrap = span.closest ? span.closest('.color-picker-wrap') : null;
+    const input = wrap && wrap.querySelector('input[type="color"]');
+    if (input) span.textContent = input.value.toUpperCase();
+  });
+}
+
+// Disable controls that only matter when their parent toggle is on, so the UI reads clearly.
+function syncDependentControls() {
+  const dep = (enabled, ids) => {
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.disabled = !enabled;
+      el.classList.toggle('fx-dim', !enabled);
+    });
+  };
+  dep(document.getElementById('text-grad-toggle')?.checked || false, ['text-grad-top', 'text-grad-bot']);
+  dep(document.getElementById('text-stroke-toggle')?.checked || false, ['text-stroke-color', 'text-stroke-width']);
+  dep(document.getElementById('text-shadow-toggle')?.checked || false, ['text-shadow-color', 'text-shadow-blur']);
+  dep(document.getElementById('show-disk-toggle')?.checked || false, ['disk-color', 'disk-size-slider']);
+  dep(document.getElementById('custom-logo-color-toggle')?.checked || false, ['logo-color']);
+  dep(document.getElementById('logo-stroke-toggle')?.checked || false, ['logo-stroke-color', 'logo-stroke-width']);
+  dep(document.getElementById('logo-shadow-toggle')?.checked || false, ['logo-shadow-color', 'logo-shadow-blur']);
+  // The icon-size slider only drives scalable preset icons (e.g. github/python/react/rust).
+  const scalablePreset = state.iconMode === 'preset'
+    && (OFFICIAL_BRAND_ICONS[document.getElementById('preset-select')?.value]?.scalable === true);
+  const slider = document.getElementById('icon-scale-slider');
+  if (slider) {
+    slider.disabled = !scalablePreset;
+    slider.classList.toggle('fx-dim', !scalablePreset);
+  }
+}
+
+// Build the combined logo FX filter (drop shadow + outline stroke + custom tint), or '' if unused.
+function buildLogoFxFilter(id, opts) {
+  const { useTint, tintColor, useStroke, strokeColor, strokeWidth, useShadow, shadowColor, shadowBlur } = opts;
+  if (!useTint && !useStroke && !useShadow) return '';
+
+  let m = `    <filter id="${id}" x="-50%" y="-50%" width="200%" height="200%">\n`;
+  if (useShadow) {
+    m += `      <feOffset in="SourceAlpha" dx="0" dy="2" result="shadowOffset"/>\n`;
+    m += `      <feGaussianBlur in="shadowOffset" stdDeviation="${shadowBlur}" result="shadowBlur"/>\n`;
+    m += `      <feFlood flood-color="${shadowColor}" flood-opacity="0.85" result="shadowColor"/>\n`;
+    m += `      <feComposite in="shadowColor" in2="shadowBlur" operator="in" result="shadow"/>\n`;
+  }
+  if (useStroke) {
+    m += `      <feMorphology operator="dilate" radius="${strokeWidth}" in="SourceAlpha" result="expanded"/>\n`;
+    m += `      <feFlood flood-color="${strokeColor}" result="strokeColor"/>\n`;
+    m += `      <feComposite in="strokeColor" in2="expanded" operator="in" result="stroke"/>\n`;
+  }
+  if (useTint) {
+    m += `      <feFlood flood-color="${tintColor}" result="tintColor"/>\n`;
+    m += `      <feComposite in="tintColor" in2="SourceAlpha" operator="in" result="tintedGraphic"/>\n`;
+  }
+  m += `      <feMerge>\n`;
+  if (useShadow) m += `        <feMergeNode in="shadow"/>\n`;
+  if (useStroke) m += `        <feMergeNode in="stroke"/>\n`;
+  m += `        <feMergeNode in="${useTint ? 'tintedGraphic' : 'SourceGraphic'}"/>\n`;
+  m += `      </feMerge>\n`;
+  m += `    </filter>\n`;
+  return m;
+}
+
 // Main Render Logic
 function renderBadge() {
+  const token = ++renderToken;
+  updateColorHexes();
+  syncDependentControls();
   // Read form inputs
   const topText = document.getElementById('top-text').value;
   const bottomText = document.getElementById('bottom-text').value;
   const showDisk = document.getElementById('show-disk-toggle').checked;
   const diskColor = document.getElementById('disk-color').value;
   const logoColor = document.getElementById('logo-color').value;
-  const bgColorTop = document.getElementById('bg-color-top').value;
-  const bgColorBottom = document.getElementById('bg-color-bottom').value;
+  const bgStops = state.bgStops && state.bgStops.length >= 2 ? state.bgStops : ['#181f29', '#0f131a'];
   const textColor = document.getElementById('text-color').value;
   const radius = parseInt(document.getElementById('corner-radius').value);
   const paddingRight = parseInt(document.getElementById('padding-horizontal').value);
@@ -510,10 +711,6 @@ function renderBadge() {
   state.showDisk = showDisk;
   if (document.getElementById('disk-size-num')) document.getElementById('disk-size-num').innerText = `${diskDiameter}px`;
   if (document.getElementById('icon-scale-num')) document.getElementById('icon-scale-num').innerText = `${userLogoScale}px`;
-  if (document.getElementById('disk-color-hex')) document.getElementById('disk-color-hex').innerText = diskColor;
-  if (document.getElementById('logo-color-hex')) document.getElementById('logo-color-hex').innerText = logoColor;
-  if (document.getElementById('bg-top-hex')) document.getElementById('bg-top-hex').innerText = bgColorTop;
-  if (document.getElementById('bg-bot-hex')) document.getElementById('bg-bot-hex').innerText = bgColorBottom;
   if (document.getElementById('text-hex')) document.getElementById('text-hex').innerText = textColor;
   if (document.getElementById('radius-val')) document.getElementById('radius-val').innerText = `${radius}px`;
   if (document.getElementById('padding-val')) document.getElementById('padding-val').innerText = `${paddingRight}px`;
@@ -597,9 +794,16 @@ function renderBadge() {
   const useTextStroke = document.getElementById('text-stroke-toggle')?.checked || false;
   const textStrokeColor = document.getElementById('text-stroke-color')?.value || '#000000';
   const textStrokeWidth = document.getElementById('text-stroke-width')?.value || '1.5';
+  const subtitleColor = document.getElementById('subtitle-color')?.value || '#e0e0e0';
+  const useTextShadow = document.getElementById('text-shadow-toggle')?.checked || false;
+  const textShadowColor = document.getElementById('text-shadow-color')?.value || '#000000';
+  const textShadowBlur = parseFloat(document.getElementById('text-shadow-blur')?.value || '2');
 
   if (document.getElementById('text-stroke-val')) {
     document.getElementById('text-stroke-val').innerText = `${textStrokeWidth}px`;
+  }
+  if (document.getElementById('text-shadow-val')) {
+    document.getElementById('text-shadow-val').innerText = `${textShadowBlur}px`;
   }
 
   // Logo FX Controls
@@ -608,17 +812,22 @@ function renderBadge() {
   const useLogoStroke = document.getElementById('logo-stroke-toggle')?.checked || false;
   const logoStrokeColor = document.getElementById('logo-stroke-color')?.value || '#ffffff';
   const logoStrokeWidth = document.getElementById('logo-stroke-width')?.value || '2';
+  const useLogoShadow = document.getElementById('logo-shadow-toggle')?.checked || false;
+  const logoShadowColor = document.getElementById('logo-shadow-color')?.value || '#000000';
+  const logoShadowBlur = parseFloat(document.getElementById('logo-shadow-blur')?.value || '2');
 
   if (document.getElementById('logo-stroke-val')) {
     document.getElementById('logo-stroke-val').innerText = `${logoStrokeWidth}px`;
+  }
+  if (document.getElementById('logo-shadow-val')) {
+    document.getElementById('logo-shadow-val').innerText = `${logoShadowBlur}px`;
   }
 
   // SVG Header & Defs
   let svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}" height="${height}" fill="none" viewBox="0 0 ${width} ${height}">
   <defs>
     <linearGradient id="badge-bg" x1="0" y1="0" x2="0" y2="${height}" gradientUnits="userSpaceOnUse">
-      <stop stop-color="${bgColorTop}"/>
-      <stop offset="1" stop-color="${bgColorBottom}"/>
+${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFixed(3)}" stop-color="${hex}"/>`).join('\n')}
     </linearGradient>
 `;
 
@@ -630,29 +839,32 @@ function renderBadge() {
     </linearGradient>\n`;
   }
 
-  // Combined Logo Filter (Universal Tinting for all Uploads/Images/SVGs + Logo Outline Stroke)
-  const useLogoFxFilter = (useCustomLogoColor || useLogoStroke) && !showDisk;
-  if (useLogoFxFilter) {
-    svgMarkup += `    <filter id="badge-logo-fx" x="-50%" y="-50%" width="200%" height="200%">\n`;
-    if (useLogoStroke) {
-      svgMarkup += `      <feMorphology operator="dilate" radius="${logoStrokeWidth}" in="SourceAlpha" result="expanded"/>\n`;
-      svgMarkup += `      <feFlood flood-color="${logoStrokeColor}" result="strokeColor"/>\n`;
-      svgMarkup += `      <feComposite in="strokeColor" in2="expanded" operator="in" result="stroke"/>\n`;
-    }
-    if (useCustomLogoColor) {
-      svgMarkup += `      <feFlood flood-color="${customLogoColor}" result="tintColor"/>\n`;
-      svgMarkup += `      <feComposite in="tintColor" in2="SourceAlpha" operator="in" result="tintedGraphic"/>\n`;
-    }
-    svgMarkup += `      <feMerge>\n`;
-    if (useLogoStroke) svgMarkup += `        <feMergeNode in="stroke"/>\n`;
-    svgMarkup += `        <feMergeNode in="${useCustomLogoColor ? 'tintedGraphic' : 'SourceGraphic'}"/>\n`;
-    svgMarkup += `      </feMerge>\n`;
-    svgMarkup += `    </filter>\n`;
-  }
+  // Combined Logo Filter (Universal Tinting for all Uploads/Images/SVGs + Logo Outline Stroke + Drop Shadow)
+  svgMarkup += buildLogoFxFilter('badge-logo-fx', {
+    useTint: useCustomLogoColor && !showDisk,
+    tintColor: customLogoColor,
+    useStroke: useLogoStroke && !showDisk,
+    strokeColor: logoStrokeColor,
+    strokeWidth: logoStrokeWidth,
+    useShadow: useLogoShadow,
+    shadowColor: logoShadowColor,
+    shadowBlur: logoShadowBlur
+  });
+
+  // Text drop shadow filter (title + subtitle)
+  svgMarkup += buildLogoFxFilter('badge-text-fx', {
+    useTint: false,
+    useStroke: false,
+    useShadow: useTextShadow,
+    shadowColor: textShadowColor,
+    shadowBlur: textShadowBlur
+  });
 
   svgMarkup += `  </defs>\n\n  <!-- Background Card Base -->\n  <rect width="${width}" height="${height}" fill="url(#badge-bg)" rx="${radius}"/>\n  <rect width="${width - 2}" height="${height - 2}" x="1" y="1" stroke="#ffffff" stroke-opacity=".15" stroke-width="2" rx="${Math.max(0, radius - 1)}"/>\n`;
 
+  const useLogoFxFilter = useCustomLogoColor || useLogoStroke || useLogoShadow;
   const logoFilterAttr = useLogoFxFilter ? ' filter="url(#badge-logo-fx)"' : '';
+  const textShadowAttr = useTextShadow ? ' filter="url(#badge-text-fx)"' : '';
 
   // Logo X placement: left (default), right (text on the left), or centered (minimal).
   // Right mode mirrors left mode, so the logo box sits at logoBoxStart (or stays flush to the
@@ -752,22 +964,23 @@ function renderBadge() {
     // Finish building the rest of the SVG (text etc.) before the async fetch
     const textFillAttr2 = useTextGrad ? 'fill="url(#badge-text-grad)"' : `fill="${textColor}"`;
     const textStrokeAttr2 = useTextStroke ? `stroke="${textStrokeColor}" stroke-width="${textStrokeWidth}" stroke-linejoin="round" paint-order="stroke fill"` : '';
+    const subtitleFill2 = `fill="${subtitleColor}"`;
     if (!isMinimal) {
       if (isSingleLine) {
         const cTW = bottomText ? measureText(bottomText, bottomFont) * 0.98 : 0;
         const cTA = availableTextWidth;
         const cTL = cTW > cTA ? `textLength="${cTA}" lengthAdjust="spacingAndGlyphs"` : '';
-        svgMarkup += `  <text x="${textX}" y="${height/2 + 5}" ${textFillAttr2} ${textStrokeAttr2} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="700" ${cTL}>${escapeHtml(bottomText)}</text>\n`;
+        svgMarkup += `  <text x="${textX}" y="${height/2 + 5}" ${textFillAttr2} ${textStrokeAttr2}${textShadowAttr} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="700" ${cTL}>${escapeHtml(bottomText)}</text>\n`;
       } else {
         const topMW = topText ? measureText(topText, topFont) * 0.98 : 0;
         const botMW = bottomText ? measureText(bottomText, bottomFont) * 0.98 : 0;
         if (topText) {
           const tTL = topMW > availableTextWidth ? `textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"` : '';
-          svgMarkup += `  <text x="${textX}" y="${topY}" fill="#e0e0e0" ${textStrokeAttr2} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="500" ${tTL}>${escapeHtml(topText)}</text>\n`;
+          svgMarkup += `  <text x="${textX}" y="${topY}" ${subtitleFill2} ${textStrokeAttr2}${textShadowAttr} font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="500" ${tTL}>${escapeHtml(topText)}</text>\n`;
         }
         if (bottomText) {
           const bTL = botMW > availableTextWidth ? `textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"` : '';
-          svgMarkup += `  <text x="${textX}" y="${bottomY}" ${textFillAttr2} ${textStrokeAttr2} font-family="Inter, -apple-system, sans-serif" font-size="21" font-weight="700" ${bTL}>${escapeHtml(bottomText)}</text>\n`;
+          svgMarkup += `  <text x="${textX}" y="${bottomY}" ${textFillAttr2} ${textStrokeAttr2}${textShadowAttr} font-family="Inter, -apple-system, sans-serif" font-size="21" font-weight="700" ${bTL}>${escapeHtml(bottomText)}</text>\n`;
         }
       }
     }
@@ -782,6 +995,7 @@ function renderBadge() {
 
     // Async: fetch real icon and swap in
     extractFontAwesomeSvg(faIconClass).then((fa) => {
+      if (token !== renderToken) return; // Stale render — a newer one superseded this
       if (!fa) return; // Leave the placeholder if icon not found
       const realIcon = `<svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${fa.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${fa.pathData}"/></svg>`;
       const finalSvg = svgMarkup.replace('<!-- FA_ICON_SLOT -->', realIcon);
@@ -814,7 +1028,7 @@ function renderBadge() {
         ? `textLength="${compactAvail}" lengthAdjust="spacingAndGlyphs"`
         : '';
       const compactAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
-      svgMarkup += `  <!-- 1-Line Text -->\n  <text ${compactAnchor} y="${height/2 + 5}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 16 : 13}" font-weight="700" ${compactTextLenAttr}>${escapeHtml(bottomText)}</text>\n`;
+      svgMarkup += `  <!-- 1-Line Text -->\n  <text ${compactAnchor} y="${height/2 + 5}" ${textFillAttr} ${textStrokeAttr}${textShadowAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 16 : 13}" font-weight="700" ${compactTextLenAttr}>${escapeHtml(bottomText)}</text>\n`;
     } else {
       const topMeasured   = topText    ? measureText(topText,    topFont)    * 0.98 : 0;
       const bottomMeasured = bottomText ? measureText(bottomText, bottomFont) * 0.98 : 0;
@@ -823,14 +1037,14 @@ function renderBadge() {
           ? `textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"`
           : '';
         const topAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
-        svgMarkup += `  <text ${topAnchor} y="${topY}" fill="#e0e0e0" ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 15 : 13}" font-weight="500" ${topTextLenAttr}>${escapeHtml(topText)}</text>\n`;
+        svgMarkup += `  <text ${topAnchor} y="${topY}" fill="${subtitleColor}" ${textStrokeAttr}${textShadowAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 15 : 13}" font-weight="500" ${topTextLenAttr}>${escapeHtml(topText)}</text>\n`;
       }
       if (bottomText) {
         const bottomTextLenAttr = bottomMeasured > availableTextWidth
           ? `textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"`
           : '';
         const bottomAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
-        svgMarkup += `  <text ${bottomAnchor} y="${bottomY}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 26 : 21}" font-weight="700" ${bottomTextLenAttr}>${escapeHtml(bottomText)}</text>\n`;
+        svgMarkup += `  <text ${bottomAnchor} y="${bottomY}" ${textFillAttr} ${textStrokeAttr}${textShadowAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 26 : 21}" font-weight="700" ${bottomTextLenAttr}>${escapeHtml(bottomText)}</text>\n`;
       }
     }
   }
@@ -878,70 +1092,90 @@ function copyCode() {
   showToast('Copied code snippet to clipboard!');
 }
 
-function downloadSVG() {
-  const svgMarkup = document.getElementById('badge-stage').innerHTML;
-  const title = (document.getElementById('bottom-text').value || 'badge').toLowerCase().replace(/\s+/g, '_');
-
-  const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `devin_${title}_badge.svg`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-  showToast('Downloaded SVG vector badge!');
+// Build the export-ready SVG for the current style, resolving the FontAwesome icon (if in FA
+// mode) so exports never contain the async placeholder or a bare FA_ICON_SLOT comment.
+function getExportSvg() {
+  if (state.iconMode === 'fontawesome') {
+    const faClass = parseFontAwesomeInput(document.getElementById('fa-icon-input')?.value || '');
+    return extractFontAwesomeSvg(faClass).then((fa) => generateBadgeForStyle(state.style, fa));
+  }
+  return Promise.resolve(generateBadgeForStyle(state.style));
 }
 
-function downloadPNG() {
-  const svgElement = document.querySelector('#badge-stage svg');
-  if (!svgElement) return;
+function downloadSVG() {
+  getExportSvg().then((svgMarkup) => {
+    const title = (document.getElementById('bottom-text').value || 'badge').toLowerCase().replace(/\s+/g, '_');
 
-  const title = (document.getElementById('bottom-text').value || 'badge').toLowerCase().replace(/\s+/g, '_');
-  const width = parseInt(svgElement.getAttribute('width'));
-  const height = parseInt(svgElement.getAttribute('height'));
-  const scale = 3;
-
-  // Clone and fix up SVG for canvas rendering
-  const svgClone = svgElement.cloneNode(true);
-  svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  svgClone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-
-  // Inject Google Fonts stylesheet so text renders correctly in canvas
-  const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-  styleEl.textContent = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');`;
-  svgClone.insertBefore(styleEl, svgClone.firstChild);
-
-  const svgData = new XMLSerializer().serializeToString(svgClone);
-  const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width * scale;
-  canvas.height = height * scale;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(scale, scale);
-
-  const img = new Image();
-  img.onload = () => {
-    ctx.drawImage(img, 0, 0);
-    const pngUrl = canvas.toDataURL('image/png');
+    const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = pngUrl;
-    link.download = `devin_${title}_badge.png`;
+    link.href = url;
+    link.download = `devin_${title}_badge.svg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Downloaded high-res PNG badge!');
-  };
-  img.onerror = () => {
-    showToast('PNG export failed — try Download SVG instead.');
-  };
-  img.src = svgDataUrl;
+    URL.revokeObjectURL(url);
+    showToast('Downloaded SVG vector badge!');
+  });
 }
 
-// Helper function to generate badge SVG for a specific style
-function generateBadgeForStyle(styleName) {
+function downloadPNG() {
+  getExportSvg().then((svgMarkup) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgMarkup, 'image/svg+xml');
+    const svgElement = doc.querySelector('svg');
+    if (!svgElement) {
+      showToast('PNG export failed — try Download SVG instead.');
+      return;
+    }
+
+    const title = (document.getElementById('bottom-text').value || 'badge').toLowerCase().replace(/\s+/g, '_');
+    const width = parseInt(svgElement.getAttribute('width'));
+    const height = parseInt(svgElement.getAttribute('height'));
+    const scale = 3;
+
+    // Clone and fix up SVG for canvas rendering
+    const svgClone = svgElement.cloneNode(true);
+    svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    svgClone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
+    // Inject Google Fonts stylesheet so text renders correctly in canvas
+    const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    styleEl.textContent = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');`;
+    svgClone.insertBefore(styleEl, svgClone.firstChild);
+
+    const svgData = new XMLSerializer().serializeToString(svgClone);
+    const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0);
+      const pngUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = pngUrl;
+      link.download = `devin_${title}_badge.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Downloaded high-res PNG badge!');
+    };
+    img.onerror = () => {
+      showToast('PNG export failed — try Download SVG instead.');
+    };
+    img.src = svgDataUrl;
+  });
+}
+
+// Helper function to generate badge SVG for a specific style.
+// `faIcon` (optional) is a resolved FontAwesome icon ({ viewBox, pathData }) so exports can embed
+// the real icon synchronously instead of leaving a bare FA_ICON_SLOT comment.
+function generateBadgeForStyle(styleName, faIcon) {
   const currentStyle = state.style;
   state.style = styleName;
   
@@ -951,8 +1185,7 @@ function generateBadgeForStyle(styleName) {
   const showDisk = document.getElementById('show-disk-toggle').checked;
   const diskColor = document.getElementById('disk-color').value;
   const logoColor = document.getElementById('logo-color').value;
-  const bgColorTop = document.getElementById('bg-color-top').value;
-  const bgColorBottom = document.getElementById('bg-color-bottom').value;
+  const bgStops = state.bgStops && state.bgStops.length >= 2 ? state.bgStops : ['#181f29', '#0f131a'];
   const textColor = document.getElementById('text-color').value;
   const radius = parseInt(document.getElementById('corner-radius').value);
   const paddingRight = parseInt(document.getElementById('padding-horizontal').value);
@@ -1038,7 +1271,7 @@ function generateBadgeForStyle(styleName) {
       maxTextW = Math.max(topW, bottomW);
     }
     if (noLogo) {
-      width = Math.ceil(maxTextW + leftPad * 2 + 4);
+      width = Math.min(Math.ceil(maxTextW + leftPad * 2 + 4), MAX_BADGE_WIDTH);
     } else if (logoOnRight) {
       // Mirrored left-mode spacing: capture the left-mode layout (where the text would start if
       // the logo were on the left) and flip it. This keeps the text↔logo and logo↔outer-edge gaps
@@ -1052,7 +1285,7 @@ function generateBadgeForStyle(styleName) {
       logoBoxStart = Math.round(leftPad + maxTextW + (textXLeft - (logoBoxPad + logoReserve)));
       width = Math.min(Math.ceil(logoBoxStart + logoReserve + logoBoxPad), MAX_BADGE_WIDTH);
     } else {
-      width = Math.ceil(textX + maxTextW + paddingRight + 4);
+      width = Math.min(Math.ceil(textX + maxTextW + paddingRight + 4), MAX_BADGE_WIDTH);
     }
   }
 
@@ -1071,19 +1304,25 @@ function generateBadgeForStyle(styleName) {
   const useTextStroke = document.getElementById('text-stroke-toggle')?.checked || false;
   const textStrokeColor = document.getElementById('text-stroke-color')?.value || '#000000';
   const textStrokeWidth = document.getElementById('text-stroke-width')?.value || '1.5';
+  const subtitleColor = document.getElementById('subtitle-color')?.value || '#e0e0e0';
+  const useTextShadow = document.getElementById('text-shadow-toggle')?.checked || false;
+  const textShadowColor = document.getElementById('text-shadow-color')?.value || '#000000';
+  const textShadowBlur = parseFloat(document.getElementById('text-shadow-blur')?.value || '2');
 
   const useCustomLogoColor = document.getElementById('custom-logo-color-toggle')?.checked || false;
   const customLogoColor = document.getElementById('logo-color')?.value || '#ffffff';
   const useLogoStroke = document.getElementById('logo-stroke-toggle')?.checked || false;
   const logoStrokeColor = document.getElementById('logo-stroke-color')?.value || '#ffffff';
   const logoStrokeWidth = document.getElementById('logo-stroke-width')?.value || '2';
+  const useLogoShadow = document.getElementById('logo-shadow-toggle')?.checked || false;
+  const logoShadowColor = document.getElementById('logo-shadow-color')?.value || '#000000';
+  const logoShadowBlur = parseFloat(document.getElementById('logo-shadow-blur')?.value || '2');
 
   // Build SVG
   let svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}" height="${height}" fill="none" viewBox="0 0 ${width} ${height}">
   <defs>
     <linearGradient id="badge-bg-${styleName}" x1="0" y1="0" x2="0" y2="${height}" gradientUnits="userSpaceOnUse">
-      <stop stop-color="${bgColorTop}"/>
-      <stop offset="1" stop-color="${bgColorBottom}"/>
+${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFixed(3)}" stop-color="${hex}"/>`).join('\n')}
     </linearGradient>
 `;
 
@@ -1094,28 +1333,32 @@ function generateBadgeForStyle(styleName) {
     </linearGradient>\n`;
   }
 
-  const useLogoFxFilter = (useCustomLogoColor || useLogoStroke) && !showDisk;
-  if (useLogoFxFilter) {
-    svgMarkup += `    <filter id="badge-logo-fx-${styleName}" x="-50%" y="-50%" width="200%" height="200%">\n`;
-    if (useLogoStroke) {
-      svgMarkup += `      <feMorphology operator="dilate" radius="${logoStrokeWidth}" in="SourceAlpha" result="expanded"/>\n`;
-      svgMarkup += `      <feFlood flood-color="${logoStrokeColor}" result="strokeColor"/>\n`;
-      svgMarkup += `      <feComposite in="strokeColor" in2="expanded" operator="in" result="stroke"/>\n`;
-    }
-    if (useCustomLogoColor) {
-      svgMarkup += `      <feFlood flood-color="${customLogoColor}" result="tintColor"/>\n`;
-      svgMarkup += `      <feComposite in="tintColor" in2="SourceAlpha" operator="in" result="tintedGraphic"/>\n`;
-    }
-    svgMarkup += `      <feMerge>\n`;
-    if (useLogoStroke) svgMarkup += `        <feMergeNode in="stroke"/>\n`;
-    svgMarkup += `        <feMergeNode in="${useCustomLogoColor ? 'tintedGraphic' : 'SourceGraphic'}"/>\n`;
-    svgMarkup += `      </feMerge>\n`;
-    svgMarkup += `    </filter>\n`;
-  }
+  // Combined Logo Filter (Universal Tinting for all Uploads/Images/SVGs + Logo Outline Stroke + Drop Shadow)
+  svgMarkup += buildLogoFxFilter(`badge-logo-fx-${styleName}`, {
+    useTint: useCustomLogoColor && !showDisk,
+    tintColor: customLogoColor,
+    useStroke: useLogoStroke && !showDisk,
+    strokeColor: logoStrokeColor,
+    strokeWidth: logoStrokeWidth,
+    useShadow: useLogoShadow,
+    shadowColor: logoShadowColor,
+    shadowBlur: logoShadowBlur
+  });
+
+  // Text drop shadow filter (title + subtitle)
+  svgMarkup += buildLogoFxFilter(`badge-text-fx-${styleName}`, {
+    useTint: false,
+    useStroke: false,
+    useShadow: useTextShadow,
+    shadowColor: textShadowColor,
+    shadowBlur: textShadowBlur
+  });
 
   svgMarkup += `  </defs>\n\n  <rect width="${width}" height="${height}" fill="url(#badge-bg-${styleName})" rx="${radius}"/>\n  <rect width="${width - 2}" height="${height - 2}" x="1" y="1" stroke="#ffffff" stroke-opacity=".15" stroke-width="2" rx="${Math.max(0, radius - 1)}"/>\n`;
 
+  const useLogoFxFilter = useCustomLogoColor || useLogoStroke || useLogoShadow;
   const logoFilterAttr = useLogoFxFilter ? ` filter="url(#badge-logo-fx-${styleName})"` : '';
+  const textShadowAttr = useTextShadow ? ` filter="url(#badge-text-fx-${styleName})"` : '';
 
   // Logo X placement: left (default), right (text on the left), or centered (minimal).
   // Right mode mirrors left mode, so the logo box sits at logoBoxStart (or stays flush to the
@@ -1201,8 +1444,15 @@ function generateBadgeForStyle(styleName) {
     const imgY = Math.round((height - imgSize) / 2);
     svgMarkup += `  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
   } else if (state.iconMode === 'fontawesome' && !noLogo) {
-    // Slot replaced by getResolvedSvg() in createGitHubIssue before canvas render
-    svgMarkup += `  <!-- FA_ICON_SLOT -->\n`;
+    const imgSize = effectiveLogoSize;
+    const imgY = Math.round((height - imgSize) / 2);
+    const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : textColor);
+    if (faIcon) {
+      svgMarkup += `  <!-- FontAwesome Icon -->\n  <svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${faIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${faIcon.pathData}"/></svg>\n`;
+    } else {
+      // No resolved icon (offline or fetch pending) — keep exported files visually complete
+      svgMarkup += `  <!-- FontAwesome Placeholder -->\n  <text x="${iconX + imgSize / 2}" y="${imgY + imgSize * 0.7}" fill="${fillColor}" font-size="${imgSize}" font-family="sans-serif" text-anchor="middle" opacity="0.6">?</text>\n`;
+    }
   } else if (state.iconMode === 'raw' && state.rawSvgDataUrl) {
     const imgSize = effectiveLogoSize;
     const imgY = Math.round((height - imgSize) / 2);
@@ -1215,16 +1465,29 @@ function generateBadgeForStyle(styleName) {
 
   if (!isMinimal) {
     if (isSingleLine) {
-      const singleAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
-      svgMarkup += `  <text ${singleAnchor} y="${height/2 + 5}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 16 : 13}" font-weight="700">${escapeHtml(bottomText)}</text>\n`;
+      const compactTextW = bottomText ? measureText(bottomText, bottomFont) * 0.98 : 0;
+      const compactAvail = availableTextWidth;
+      const compactTextLenAttr = compactTextW > compactAvail
+        ? `textLength="${compactAvail}" lengthAdjust="spacingAndGlyphs"`
+        : '';
+      const compactAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
+      svgMarkup += `  <!-- 1-Line Text -->\n  <text ${compactAnchor} y="${height/2 + 5}" ${textFillAttr} ${textStrokeAttr}${textShadowAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 16 : 13}" font-weight="700" ${compactTextLenAttr}>${escapeHtml(bottomText)}</text>\n`;
     } else {
+      const topMeasured = topText ? measureText(topText, topFont) * 0.98 : 0;
+      const bottomMeasured = bottomText ? measureText(bottomText, bottomFont) * 0.98 : 0;
       if (topText) {
+        const topTextLenAttr = topMeasured > availableTextWidth
+          ? `textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"`
+          : '';
         const topAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
-        svgMarkup += `  <text ${topAnchor} y="${topY}" fill="#e0e0e0" ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 15 : 13}" font-weight="500">${escapeHtml(topText)}</text>\n`;
+        svgMarkup += `  <text ${topAnchor} y="${topY}" fill="${subtitleColor}" ${textStrokeAttr}${textShadowAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 15 : 13}" font-weight="500" ${topTextLenAttr}>${escapeHtml(topText)}</text>\n`;
       }
       if (bottomText) {
+        const bottomTextLenAttr = bottomMeasured > availableTextWidth
+          ? `textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"`
+          : '';
         const bottomAnchor = textCentered ? `x="${Math.round(width / 2)}" text-anchor="middle"` : `x="${textX}"`;
-        svgMarkup += `  <text ${bottomAnchor} y="${bottomY}" ${textFillAttr} ${textStrokeAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 26 : 21}" font-weight="700">${escapeHtml(bottomText)}</text>\n`;
+        svgMarkup += `  <text ${bottomAnchor} y="${bottomY}" ${textFillAttr} ${textStrokeAttr}${textShadowAttr} font-family="Inter, -apple-system, sans-serif" font-size="${noLogo ? 26 : 21}" font-weight="700" ${bottomTextLenAttr}>${escapeHtml(bottomText)}</text>\n`;
       }
     }
   }
@@ -1240,27 +1503,34 @@ function generateBadgeForStyle(styleName) {
 function downloadAllStyles() {
   const title = (document.getElementById('bottom-text').value || 'badge').toLowerCase().replace(/\s+/g, '_');
   const styles = ['cozy', 'compact', 'cozy-minimal', 'compact-minimal'];
-  
-  let downloadCount = 0;
-  
-  styles.forEach((styleName, index) => {
-    setTimeout(() => {
-      const svgMarkup = generateBadgeForStyle(styleName);
-      const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `devin_${title}_${styleName}.svg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      downloadCount++;
-      if (downloadCount === styles.length) {
-        showToast('Downloaded all 4 badge styles!');
-      }
-    }, index * 200); // Stagger downloads by 200ms
+
+  // Resolve the FontAwesome icon (if in FA mode) so every style exports with the real icon
+  const faPromise = state.iconMode === 'fontawesome'
+    ? extractFontAwesomeSvg(parseFontAwesomeInput(document.getElementById('fa-icon-input')?.value || ''))
+    : Promise.resolve(null);
+
+  faPromise.then((faIcon) => {
+    let downloadCount = 0;
+
+    styles.forEach((styleName, index) => {
+      setTimeout(() => {
+        const svgMarkup = generateBadgeForStyle(styleName, faIcon);
+        const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `devin_${title}_${styleName}.svg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        downloadCount++;
+        if (downloadCount === styles.length) {
+          showToast('Downloaded all 4 badge styles!');
+        }
+      }, index * 200); // Stagger downloads by 200ms
+    });
   });
 }
 
@@ -1325,27 +1595,9 @@ function createGitHubIssue() {
 
     const iconsAndText = [iconDescription, textLines].filter(Boolean).join('\n\n');
 
-    // Generate SVG for each style, resolving FA icon slot if needed
+    // Generate SVG for each style, embedding the resolved FA icon (if in FA mode)
     function getResolvedSvg(styleName) {
-      const svg = generateBadgeForStyle(styleName);
-      if (state.iconMode !== 'fontawesome' || !faIcon) return Promise.resolve(svg);
-
-      // generateBadgeForStyle leaves <!-- FA_ICON_SLOT --> — resolve it now
-      const wMatch = svg.match(/width="(\d+)"/);
-      const hMatch = svg.match(/height="(\d+)"/);
-      const w = wMatch ? parseInt(wMatch[1]) : 164;
-      const h = hMatch ? parseInt(hMatch[1]) : 64;
-      const heightScale = h / 64;
-      const userLogoScale = parseInt(document.getElementById('icon-scale-slider').value) || 34;
-      const imgSize = Math.round(userLogoScale * heightScale);
-      const isMinimal = styleName === 'cozy-minimal' || styleName === 'compact-minimal';
-      const imgX = isMinimal
-        ? Math.round((h - imgSize) / 2)
-        : (state.logoPosition === 'right' ? Math.round(w - imgSize - Math.round(12 * heightScale)) : Math.round(12 * heightScale));
-      const imgY = Math.round((h - imgSize) / 2);
-      const fillColor = document.getElementById('text-color').value || '#ffffff';
-      const realIcon = `<svg x="${imgX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${faIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${faIcon.pathData}"/></svg>`;
-      return Promise.resolve(svg.replace('<!-- FA_ICON_SLOT -->', realIcon));
+      return Promise.resolve(generateBadgeForStyle(styleName, faIcon));
     }
 
     // Render one resolved SVG to a PNG base64 string via canvas
@@ -1455,12 +1707,15 @@ function getBadgeConfig() {
     rawSvgDataUrl: state.rawSvgDataUrl || '',
     customSvgContent: state.customSvgContent || '',
     isUploadedSvg: state.isUploadedSvg,
+    uploadFilename: state.uploadFilename || '',
     faIconInput: document.getElementById('fa-icon-input')?.value || 'fa-brands fa-github',
     showDisk: document.getElementById('show-disk-toggle')?.checked || false,
     diskColor: document.getElementById('disk-color')?.value || '#ffffff',
     logoColor: document.getElementById('logo-color')?.value || '#ffffff',
-    bgColorTop: document.getElementById('bg-color-top')?.value || '#181f29',
-    bgColorBottom: document.getElementById('bg-color-bottom')?.value || '#0f131a',
+    bgStops: state.bgStops && state.bgStops.length >= 2 ? state.bgStops.slice() : ['#181f29', '#0f131a'],
+    bgGradPreset: state.bgGradPreset || 'custom',
+    bgColorTop: (state.bgStops && state.bgStops[0]) || '#181f29',
+    bgColorBottom: (state.bgStops && state.bgStops[state.bgStops.length - 1]) || '#0f131a',
     textColor: document.getElementById('text-color')?.value || '#ffffff',
     radius: parseInt(document.getElementById('corner-radius')?.value || '8'),
     paddingRight: parseInt(document.getElementById('padding-horizontal')?.value || '16'),
@@ -1470,12 +1725,19 @@ function getBadgeConfig() {
     useLogoStroke: document.getElementById('logo-stroke-toggle')?.checked || false,
     logoStrokeColor: document.getElementById('logo-stroke-color')?.value || '#ffffff',
     logoStrokeWidth: parseFloat(document.getElementById('logo-stroke-width')?.value || '2'),
+    useLogoShadow: document.getElementById('logo-shadow-toggle')?.checked || false,
+    logoShadowColor: document.getElementById('logo-shadow-color')?.value || '#000000',
+    logoShadowBlur: parseFloat(document.getElementById('logo-shadow-blur')?.value || '2'),
     useTextGrad: document.getElementById('text-grad-toggle')?.checked || false,
     textGradTop: document.getElementById('text-grad-top')?.value || '#61DAFB',
     textGradBot: document.getElementById('text-grad-bot')?.value || '#FFFFFF',
     useTextStroke: document.getElementById('text-stroke-toggle')?.checked || false,
     textStrokeColor: document.getElementById('text-stroke-color')?.value || '#000000',
-    textStrokeWidth: parseFloat(document.getElementById('text-stroke-width')?.value || '1.5')
+    textStrokeWidth: parseFloat(document.getElementById('text-stroke-width')?.value || '1.5'),
+    subtitleColor: document.getElementById('subtitle-color')?.value || '#e0e0e0',
+    useTextShadow: document.getElementById('text-shadow-toggle')?.checked || false,
+    textShadowColor: document.getElementById('text-shadow-color')?.value || '#000000',
+    textShadowBlur: parseFloat(document.getElementById('text-shadow-blur')?.value || '2')
   };
 }
 
@@ -1485,24 +1747,39 @@ function applyBadgeConfig(cfg) {
   if (cfg.style) setStyle(cfg.style);
   if (cfg.topText !== undefined && document.getElementById('top-text')) document.getElementById('top-text').value = cfg.topText;
   if (cfg.bottomText !== undefined && document.getElementById('bottom-text')) document.getElementById('bottom-text').value = cfg.bottomText;
-  if (cfg.iconMode) setIconMode(cfg.iconMode);
-  if (cfg.logoPosition) setLogoPosition(cfg.logoPosition);
-  if (cfg.presetKey && document.getElementById('preset-select')) document.getElementById('preset-select').value = cfg.presetKey;
-  
+
+  // Restore logo state BEFORE switching modes, so setIconMode()'s internal render
+  // picks up the uploaded image / FontAwesome icon already restored
   if (cfg.uploadedDataUrl !== undefined) state.uploadedDataUrl = cfg.uploadedDataUrl;
   if (cfg.rawSvgDataUrl !== undefined) state.rawSvgDataUrl = cfg.rawSvgDataUrl;
   if (cfg.customSvgContent !== undefined) state.customSvgContent = cfg.customSvgContent;
   if (cfg.isUploadedSvg !== undefined) state.isUploadedSvg = cfg.isUploadedSvg;
+  if (cfg.uploadFilename !== undefined) state.uploadFilename = cfg.uploadFilename;
   if (cfg.faIconInput !== undefined && document.getElementById('fa-icon-input')) {
     document.getElementById('fa-icon-input').value = cfg.faIconInput;
     updateFontAwesomePreview();
   }
 
+  if (cfg.iconMode) setIconMode(cfg.iconMode);
+  if (cfg.logoPosition) setLogoPosition(cfg.logoPosition);
+  if (cfg.presetKey && document.getElementById('preset-select')) document.getElementById('preset-select').value = cfg.presetKey;
+
+  // Bring back the upload preview bar + status text so a loaded image/SVG doesn't look lost
+  if (state.iconMode === 'upload' && state.uploadedDataUrl) {
+    showUploadPreview(state.uploadFilename || 'Uploaded logo', state.uploadedDataUrl);
+  }
+
   if (cfg.showDisk !== undefined && document.getElementById('show-disk-toggle')) document.getElementById('show-disk-toggle').checked = cfg.showDisk;
   if (cfg.diskColor && document.getElementById('disk-color')) document.getElementById('disk-color').value = cfg.diskColor;
   if (cfg.logoColor && document.getElementById('logo-color')) document.getElementById('logo-color').value = cfg.logoColor;
-  if (cfg.bgColorTop && document.getElementById('bg-color-top')) document.getElementById('bg-color-top').value = cfg.bgColorTop;
-  if (cfg.bgColorBottom && document.getElementById('bg-color-bottom')) document.getElementById('bg-color-bottom').value = cfg.bgColorBottom;
+  // Background gradient stops (migrate legacy 2-color configs to the stop list)
+  if (cfg.bgStops && cfg.bgStops.length >= 2) {
+    state.bgStops = cfg.bgStops.slice(0, BG_GRADIENT_MAX_STOPS);
+  } else if (cfg.bgColorTop || cfg.bgColorBottom) {
+    state.bgStops = [cfg.bgColorTop || '#181f29', cfg.bgColorBottom || '#0f131a'];
+  }
+  if (cfg.bgGradPreset) state.bgGradPreset = cfg.bgGradPreset;
+  renderBgStopEditor();
   if (cfg.textColor && document.getElementById('text-color')) document.getElementById('text-color').value = cfg.textColor;
   if (cfg.radius !== undefined && document.getElementById('corner-radius')) document.getElementById('corner-radius').value = cfg.radius;
   if (cfg.paddingRight !== undefined && document.getElementById('padding-horizontal')) document.getElementById('padding-horizontal').value = cfg.paddingRight;
@@ -1514,12 +1791,20 @@ function applyBadgeConfig(cfg) {
   if (cfg.logoStrokeColor && document.getElementById('logo-stroke-color')) document.getElementById('logo-stroke-color').value = cfg.logoStrokeColor;
   if (cfg.logoStrokeWidth !== undefined && document.getElementById('logo-stroke-width')) document.getElementById('logo-stroke-width').value = cfg.logoStrokeWidth;
 
+  if (cfg.useLogoShadow !== undefined && document.getElementById('logo-shadow-toggle')) document.getElementById('logo-shadow-toggle').checked = cfg.useLogoShadow;
+  if (cfg.logoShadowColor && document.getElementById('logo-shadow-color')) document.getElementById('logo-shadow-color').value = cfg.logoShadowColor;
+  if (cfg.logoShadowBlur !== undefined && document.getElementById('logo-shadow-blur')) document.getElementById('logo-shadow-blur').value = cfg.logoShadowBlur;
+
   if (cfg.useTextGrad !== undefined && document.getElementById('text-grad-toggle')) document.getElementById('text-grad-toggle').checked = cfg.useTextGrad;
   if (cfg.textGradTop && document.getElementById('text-grad-top')) document.getElementById('text-grad-top').value = cfg.textGradTop;
   if (cfg.textGradBot && document.getElementById('text-grad-bot')) document.getElementById('text-grad-bot').value = cfg.textGradBot;
   if (cfg.useTextStroke !== undefined && document.getElementById('text-stroke-toggle')) document.getElementById('text-stroke-toggle').checked = cfg.useTextStroke;
   if (cfg.textStrokeColor && document.getElementById('text-stroke-color')) document.getElementById('text-stroke-color').value = cfg.textStrokeColor;
   if (cfg.textStrokeWidth !== undefined && document.getElementById('text-stroke-width')) document.getElementById('text-stroke-width').value = cfg.textStrokeWidth;
+  if (cfg.subtitleColor && document.getElementById('subtitle-color')) document.getElementById('subtitle-color').value = cfg.subtitleColor;
+  if (cfg.useTextShadow !== undefined && document.getElementById('text-shadow-toggle')) document.getElementById('text-shadow-toggle').checked = cfg.useTextShadow;
+  if (cfg.textShadowColor && document.getElementById('text-shadow-color')) document.getElementById('text-shadow-color').value = cfg.textShadowColor;
+  if (cfg.textShadowBlur !== undefined && document.getElementById('text-shadow-blur')) document.getElementById('text-shadow-blur').value = cfg.textShadowBlur;
 
   renderBadge();
 }
