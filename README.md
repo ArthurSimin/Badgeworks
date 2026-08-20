@@ -7,6 +7,7 @@
   <img alt="generic" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/documentation/generic_vector.svg">
   <img alt="website" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/documentation/website_vector.svg">
   <img height="56" src="devin_deepseek_4_flash_free_badge.svg" />
+  <img height="56" src="devin_opencode_badge.svg" />
   <img height="56" src="devin_kiro_badge.svg" />
 </p>
 
