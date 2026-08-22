@@ -1660,7 +1660,10 @@ ${badgePurpose}
 ${iconsAndText}
 
 **Example if needed**
-${exampleLines}`;
+${exampleLines}
+
+---
+**This issue is made automatically by Badgeworks, so unfortunately no labels and wrong Issue Template :[**`;
 
       navigator.clipboard.writeText(body)
         .then(() => showToast('Done! Body copied — paste it into the issue form.'))
