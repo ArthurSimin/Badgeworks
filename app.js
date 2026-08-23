@@ -263,20 +263,40 @@ function setLogoPosition(pos) {
   renderBadge();
 }
 
-// Parse FA input: accepts full <i class="..."> tag OR plain class string
+// Parse FA input from pack dropdown + name input, or from explicit raw string / pasted HTML
 function parseFontAwesomeInput(raw) {
-  if (!raw) return 'fa-brands fa-github';
-  const tagMatch = raw.match(/<i[^>]+class=["']([^"']+)["']/i);
-  if (tagMatch) return tagMatch[1].trim();
-  return raw.trim();
+  const packSelect = document.getElementById('fa-pack-select');
+  const nameInput = document.getElementById('fa-icon-name');
+  
+  let rawStr = typeof raw === 'string' ? raw : (nameInput ? nameInput.value : 'github');
+  if (!rawStr) rawStr = '';
+
+  const tagMatch = rawStr.match(/<i[^>]+class=["']([^"']+)["']/i);
+  const classStr = tagMatch ? tagMatch[1].trim() : rawStr.trim();
+
+  if (classStr.includes(' ')) {
+    const { style, name } = parseFaClass(classStr);
+    const packVal = style === 'brands' ? 'fa-brands' : style === 'regular' ? 'fa-regular' : 'fa-solid';
+    const cleanName = name || 'github';
+    if (packSelect) packSelect.value = packVal;
+    if (nameInput && nameInput.value !== cleanName) nameInput.value = cleanName;
+    return `${packVal} fa-${cleanName}`;
+  }
+
+  const pack = packSelect ? packSelect.value : 'fa-brands';
+  let cleanName = classStr.replace(/^fa-/, '').trim();
+  if (nameInput && nameInput.value !== cleanName && cleanName !== '') {
+    nameInput.value = cleanName;
+  }
+  if (!cleanName) cleanName = 'github';
+  return `${pack} fa-${cleanName}`;
 }
 
 function updateFontAwesomePreview() {
-  const faInput = document.getElementById('fa-icon-input');
+  const iconClass = parseFontAwesomeInput();
   const faPreview = document.getElementById('fa-preview');
-  if (!faInput || !faPreview) return;
+  if (!faPreview) return;
 
-  const iconClass = parseFontAwesomeInput(faInput.value);
   const iconElement = faPreview.querySelector('i');
   if (iconElement) iconElement.className = iconClass;
 }
@@ -336,13 +356,14 @@ function extractFontAwesomeSvg(iconClass) {
 
 // Listen for FontAwesome input changes to update preview
 document.addEventListener('DOMContentLoaded', () => {
-  const faInput = document.getElementById('fa-icon-input');
-  if (faInput) {
-    faInput.addEventListener('input', () => {
-      updateFontAwesomePreview();
-      renderBadge();
-    });
-  }
+  const faNameInput = document.getElementById('fa-icon-name');
+  const faPackSelect = document.getElementById('fa-pack-select');
+  const onFaChange = () => {
+    updateFontAwesomePreview();
+    renderBadge();
+  };
+  if (faNameInput) faNameInput.addEventListener('input', onFaChange);
+  if (faPackSelect) faPackSelect.addEventListener('change', onFaChange);
 });
 
 // Handle File Upload (PNG, JPG, SVG)
@@ -952,8 +973,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
     const imgY = Math.round((height - imgSize) / 2);
     svgMarkup += `  <!-- Uploaded Image/SVG Logo -->\n  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
   } else if (state.iconMode === 'fontawesome' && !noLogo) {
-    const rawFaInput = document.getElementById('fa-icon-input')?.value || 'fa-brands fa-github';
-    const faIconClass = parseFontAwesomeInput(rawFaInput);
+    const faIconClass = parseFontAwesomeInput();
     const imgSize = effectiveLogoSize;
     const imgY = Math.round((height - imgSize) / 2);
     const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : textColor);
@@ -1096,7 +1116,7 @@ function copyCode() {
 // mode) so exports never contain the async placeholder or a bare FA_ICON_SLOT comment.
 function getExportSvg() {
   if (state.iconMode === 'fontawesome') {
-    const faClass = parseFontAwesomeInput(document.getElementById('fa-icon-input')?.value || '');
+    const faClass = parseFontAwesomeInput();
     return extractFontAwesomeSvg(faClass).then((fa) => generateBadgeForStyle(state.style, fa));
   }
   return Promise.resolve(generateBadgeForStyle(state.style));
@@ -1506,7 +1526,7 @@ function downloadAllStyles() {
 
   // Resolve the FontAwesome icon (if in FA mode) so every style exports with the real icon
   const faPromise = state.iconMode === 'fontawesome'
-    ? extractFontAwesomeSvg(parseFontAwesomeInput(document.getElementById('fa-icon-input')?.value || ''))
+    ? extractFontAwesomeSvg(parseFontAwesomeInput())
     : Promise.resolve(null);
 
   faPromise.then((faIcon) => {
@@ -1549,7 +1569,7 @@ function createGitHubIssue() {
   // Resolve the FA icon SVG if in fontawesome mode, then kick off the rest
   let faIconPromise = Promise.resolve(null);
   if (state.iconMode === 'fontawesome') {
-    const faClass = parseFontAwesomeInput(document.getElementById('fa-icon-input')?.value || '');
+    const faClass = parseFontAwesomeInput();
     faIconPromise = extractFontAwesomeSvg(faClass);
   }
 
@@ -1562,7 +1582,7 @@ function createGitHubIssue() {
       const presetKey = document.getElementById('preset-select').value;
       iconDescription = `Preset icon: **${presetKey}**`;
     } else if (state.iconMode === 'fontawesome') {
-      const faClass = parseFontAwesomeInput(document.getElementById('fa-icon-input')?.value || '');
+      const faClass = parseFontAwesomeInput();
       const { name } = parseFaClass(faClass);
       const faUrl = `https://fontawesome.com/icons/${name}`;
       if (faIcon) {
@@ -1711,7 +1731,9 @@ function getBadgeConfig() {
     customSvgContent: state.customSvgContent || '',
     isUploadedSvg: state.isUploadedSvg,
     uploadFilename: state.uploadFilename || '',
-    faIconInput: document.getElementById('fa-icon-input')?.value || 'fa-brands fa-github',
+    faPack: document.getElementById('fa-pack-select')?.value || 'fa-brands',
+    faIconName: document.getElementById('fa-icon-name')?.value || 'github',
+    faIconInput: parseFontAwesomeInput(),
     showDisk: document.getElementById('show-disk-toggle')?.checked || false,
     diskColor: document.getElementById('disk-color')?.value || '#ffffff',
     logoColor: document.getElementById('logo-color')?.value || '#ffffff',
@@ -1758,8 +1780,14 @@ function applyBadgeConfig(cfg) {
   if (cfg.customSvgContent !== undefined) state.customSvgContent = cfg.customSvgContent;
   if (cfg.isUploadedSvg !== undefined) state.isUploadedSvg = cfg.isUploadedSvg;
   if (cfg.uploadFilename !== undefined) state.uploadFilename = cfg.uploadFilename;
-  if (cfg.faIconInput !== undefined && document.getElementById('fa-icon-input')) {
-    document.getElementById('fa-icon-input').value = cfg.faIconInput;
+  if (cfg.faPack && document.getElementById('fa-pack-select')) {
+    document.getElementById('fa-pack-select').value = cfg.faPack;
+  }
+  if (cfg.faIconName !== undefined && document.getElementById('fa-icon-name')) {
+    document.getElementById('fa-icon-name').value = cfg.faIconName;
+    updateFontAwesomePreview();
+  } else if (cfg.faIconInput) {
+    parseFontAwesomeInput(cfg.faIconInput);
     updateFontAwesomePreview();
   }
 

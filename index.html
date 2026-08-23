@@ -242,8 +242,18 @@
           <!-- Mode 1.5: FontAwesome Icons -->
           <div id="icon-mode-fontawesome" class="mode-container" style="display: none;">
             <div class="field-group">
-              <label for="fa-icon-input">FontAwesome Icon (paste tag or classes)</label>
-              <input type="text" id="fa-icon-input" class="input-text" placeholder='fa-brands fa-github  or  <i class="fa-brands fa-github"></i>' oninput="updateFontAwesomePreview(); renderBadge();" value="fa-brands fa-github">
+              <label for="fa-icon-name">FontAwesome Icon</label>
+              <div class="fa-input-row">
+                <select id="fa-pack-select" class="input-text fa-pack-select" onchange="updateFontAwesomePreview(); renderBadge();">
+                  <option value="fa-brands">fa-brands</option>
+                  <option value="fa-solid">fa-solid</option>
+                  <option value="fa-regular">fa-regular</option>
+                </select>
+                <div class="fa-name-wrap">
+                  <span class="fa-prefix">fa-</span>
+                  <input type="text" id="fa-icon-name" class="input-text" placeholder="github" value="github" oninput="updateFontAwesomePreview(); renderBadge();">
+                </div>
+              </div>
               <span style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.25rem;">Browse icons at <a href="https://fontawesome.com/icons" target="_blank" style="color: var(--accent);">fontawesome.com/icons</a></span>
             </div>
             <div class="fa-preview" id="fa-preview" style="margin-top: 0.75rem; padding: 1rem; background: var(--bg-input); border-radius: var(--radius-sm); text-align: center;">
