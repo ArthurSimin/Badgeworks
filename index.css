@@ -2,7 +2,7 @@
    BADGEWORKS - HANDCRAFTED DESIGN SYSTEM & STYLES
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dosis:wght@600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
   /* Catppuccin Mocha surfaces */
@@ -454,7 +454,7 @@ body {
 }
 
 .fa-pack-select {
-  flex: 0 0 130px;
+  flex: 0 0 155px;
 }
 
 .fa-name-wrap {

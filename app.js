@@ -263,6 +263,39 @@ function setLogoPosition(pos) {
   renderBadge();
 }
 
+// Known FA pack tokens for dropdown matching & class parsing
+const FA_PACK_TOKENS = [
+  'fa-brands', 'fa-solid', 'fa-regular', 'fa-light', 'fa-thin', 'fa-duotone',
+  'fa-sharp-solid', 'fa-sharp-regular', 'fa-sharp-light', 'fa-sharp-thin',
+  'fa-pixel', 'fa-mosaic', 'fa-vellum', 'fa-slab'
+];
+
+function parseFaClass(iconClass) {
+  const parts = iconClass.trim().split(/\s+/);
+  let style = 'solid';
+  let packFull = 'fa-solid';
+  let name = null;
+
+  for (const p of parts) {
+    if (FA_PACK_TOKENS.includes(p)) {
+      packFull = p;
+      if (p === 'fa-brands') style = 'brands';
+      else if (p === 'fa-regular') style = 'regular';
+      else style = 'solid';
+    } else if (p.startsWith('fa-') && p !== 'fa') {
+      const token = p.replace('fa-', '');
+      if (['solid','regular','light','thin','duotone','brands','brand','slab','pixel','mosaic','vellum'].includes(token)) {
+        if (token === 'brands' || token === 'brand') { style = 'brands'; packFull = 'fa-brands'; }
+        else if (token === 'regular') { style = 'regular'; packFull = 'fa-regular'; }
+        else { style = 'solid'; packFull = `fa-${token}`; }
+      } else {
+        name = token;
+      }
+    }
+  }
+  return { style, packFull, name };
+}
+
 // Parse FA input from pack dropdown + name input, or from explicit raw string / pasted HTML
 function parseFontAwesomeInput(raw) {
   const packSelect = document.getElementById('fa-pack-select');
@@ -275,12 +308,15 @@ function parseFontAwesomeInput(raw) {
   const classStr = tagMatch ? tagMatch[1].trim() : rawStr.trim();
 
   if (classStr.includes(' ')) {
-    const { style, name } = parseFaClass(classStr);
-    const packVal = style === 'brands' ? 'fa-brands' : style === 'regular' ? 'fa-regular' : 'fa-solid';
+    const { packFull, name } = parseFaClass(classStr);
     const cleanName = name || 'github';
-    if (packSelect) packSelect.value = packVal;
+    if (packSelect) {
+      const opts = packSelect.options;
+      const hasOption = !opts || opts.length === 0 || Array.from(opts).some(opt => opt.value === packFull);
+      packSelect.value = hasOption ? packFull : (packSelect.value || 'fa-solid');
+    }
     if (nameInput && nameInput.value !== cleanName) nameInput.value = cleanName;
-    return `${packVal} fa-${cleanName}`;
+    return `${packSelect ? packSelect.value : packFull} fa-${cleanName}`;
   }
 
   const pack = packSelect ? packSelect.value : 'fa-brands';
@@ -303,26 +339,6 @@ function updateFontAwesomePreview() {
 
 // FA CDN fetch cache
 const faIconCache = new Map();
-
-// Parse "fa-brands fa-github" or "fa-solid fa-image" into { style, name }
-// style: solid → s, regular → r, brands → brands, light → l, thin → t, duotone → d
-function parseFaClass(iconClass) {
-  const parts = iconClass.trim().split(/\s+/).filter(p => p.startsWith('fa-'));
-  let style = 'solid';
-  let name = null;
-  for (const p of parts) {
-    const token = p.replace('fa-', '');
-    if (['solid','regular','light','thin','duotone','brands','brand','slab'].includes(token)) {
-      if (token === 'brands' || token === 'brand') style = 'brands';
-      else if (token === 'regular') style = 'regular';
-      else if (token === 'light') style = 'light';
-      else style = 'solid';
-    } else if (token !== 'fa' && token !== '') {
-      name = token;
-    }
-  }
-  return { style, name };
-}
 
 // Fetch the real SVG from the FontAwesome free CDN and extract path + viewBox
 function extractFontAwesomeSvg(iconClass) {
@@ -1007,7 +1023,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
     svgMarkup += `</svg>`;
 
     // Commit with placeholder icon immediately so text shows up right away
-    const placeholderIcon = `<text x="${iconX + imgSize / 2}" y="${imgY + imgSize * 0.7}" fill="#ffffff" font-size="${imgSize}" font-family="sans-serif" text-anchor="middle" opacity="0.6">?</text>`;
+    const placeholderIcon = `<text x="${Math.round(iconX + imgSize / 2)}" y="${Math.round(height / 2)}" fill="#ffffff" font-size="${effectiveLogoSize}" font-family="'Dosis', 'Inter', sans-serif" font-weight="600" text-anchor="middle" dominant-baseline="central" dy="-0.05em">?</text>`;
     const withPlaceholder = svgMarkup.replace('<!-- FA_ICON_SLOT -->', placeholderIcon);
     document.getElementById('badge-stage').innerHTML = withPlaceholder;
     document.getElementById('badge-size-display').innerText = `${width} × ${height} px`;
@@ -1031,8 +1047,8 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
     svgMarkup += `  <!-- Raw Pasted SVG Logo -->\n  <image href="${state.rawSvgDataUrl}" xlink:href="${state.rawSvgDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
   } else {
     const qX = Math.round(iconX + effectiveLogoSize / 2);
-    const qY = Math.round(height / 2 + effectiveLogoSize * 0.35);
-    svgMarkup += `  <!-- Placeholder ? Icon -->\n  <text x="${qX}" y="${qY}" fill="#ffffff" font-family="Inter, -apple-system, sans-serif" font-size="${effectiveLogoSize}" font-weight="700" text-anchor="middle" opacity="0.6">?</text>\n`;
+    const qY = Math.round(height / 2);
+    svgMarkup += `  <!-- Placeholder ? Icon -->\n  <text x="${qX}" y="${qY}" fill="#ffffff" font-family="'Dosis', 'Inter', sans-serif" font-size="${effectiveLogoSize}" font-weight="600" text-anchor="middle" dominant-baseline="central" dy="-0.05em">?</text>\n`;
   }
   }
 
@@ -1471,7 +1487,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
       svgMarkup += `  <!-- FontAwesome Icon -->\n  <svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${faIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${faIcon.pathData}"/></svg>\n`;
     } else {
       // No resolved icon (offline or fetch pending) — keep exported files visually complete
-      svgMarkup += `  <!-- FontAwesome Placeholder -->\n  <text x="${iconX + imgSize / 2}" y="${imgY + imgSize * 0.7}" fill="${fillColor}" font-size="${imgSize}" font-family="sans-serif" text-anchor="middle" opacity="0.6">?</text>\n`;
+      svgMarkup += `  <!-- FontAwesome Placeholder -->\n  <text x="${Math.round(iconX + imgSize / 2)}" y="${Math.round(height / 2)}" fill="#ffffff" font-size="${effectiveLogoSize}" font-family="'Dosis', 'Inter', sans-serif" font-weight="600" text-anchor="middle" dominant-baseline="central" dy="-0.05em">?</text>\n`;
     }
   } else if (state.iconMode === 'raw' && state.rawSvgDataUrl) {
     const imgSize = effectiveLogoSize;
