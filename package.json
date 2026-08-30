@@ -11,6 +11,7 @@
     "bot": "node examples/discord-bot/bot.js"
   },
   "dependencies": {
+    "opentype.js": "^2.0.0",
     "sharp": "^0.33.5"
   },
   "devDependencies": {

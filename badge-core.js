@@ -336,6 +336,76 @@ function approxMeasureText(text, fontSpec) {
   return Math.ceil(w * size);
 }
 
+// ---------------------------------------------------------------------------
+// Node-side accurate text measurement.
+// Uses opentype.js with the bundled Inter TTFs so the computed badge width
+// matches what sharp/librsvg renders with the real Inter font. The browser
+// app passes its own canvas-based measureText, so this only activates in Node.
+// ---------------------------------------------------------------------------
+let fontLoaderCache = null;
+function loadFonts() {
+  if (fontLoaderCache) return fontLoaderCache;
+  let opentype, path, fs;
+  try {
+    opentype = require('opentype.js');
+    path = require('path');
+    fs = require('fs');
+  } catch (e) {
+    fontLoaderCache = { fonts: {}, active: false };
+    return fontLoaderCache;
+  }
+  if (!opentype) {
+    fontLoaderCache = { fonts: {}, active: false };
+    return fontLoaderCache;
+  }
+  const fonts = {};
+  const dir = path.join(__dirname, 'assets', 'fonts');
+  const files = {
+    400: 'Inter_400.ttf',
+    500: 'Inter_500.ttf',
+    700: 'Inter_700.ttf'
+  };
+  for (const [weight, file] of Object.entries(files)) {
+    const p = path.join(dir, file);
+    if (!fs.existsSync(p)) continue;
+    try {
+      const buf = fs.readFileSync(p);
+      const parsed = opentype.parse(buf);
+      if (parsed && parsed.unitsPerEm) fonts[weight] = parsed;
+    } catch (e) {
+      fonts[weight] = null;
+    }
+  }
+  fontLoaderCache = { fonts, active: Object.keys(fonts).length > 0 };
+  return fontLoaderCache;
+}
+
+function fontMeasureText(text, fontSpec) {
+  if (!text) return 0;
+  const sizeMatch = String(fontSpec).match(/(\d+(?:\.\d+)?)px/);
+  const size = sizeMatch ? parseFloat(sizeMatch[1]) : 14;
+  const isBold = /700|800|900|bold/i.test(String(fontSpec));
+  const isMedium = /500|medium/i.test(String(fontSpec));
+  const weight = isBold ? '700' : isMedium ? '500' : '400';
+  const { fonts, active } = loadFonts();
+  const font = fonts[weight];
+  if (!active || !font) return approxMeasureText(text, fontSpec);
+  let scale = size / font.unitsPerEm;
+  let w = 0;
+  for (const ch of String(text)) {
+    const glyph = font.charToGlyph(ch);
+    w += glyph.advanceWidth || 0;
+  }
+  return w * scale;
+}
+
+function createMeasureText() {
+  if (typeof module === 'object' && module.exports) {
+    return fontMeasureText;
+  }
+  return approxMeasureText;
+}
+
 // Build a badge SVG string for the given style.
 //   cfg         - partial config (normalized against DEFAULT_CONFIG)
 //   styleName   - 'cozy' | 'compact' | 'cozy-minimal' | 'compact-minimal'
@@ -347,7 +417,7 @@ function approxMeasureText(text, fontSpec) {
 function buildBadgeSvg(rawCfg, styleName, faIcon, measureText, opts) {
   opts = opts || {};
   const cfg = normalizeConfig(rawCfg);
-  const measure = (typeof measureText === 'function') ? measureText : approxMeasureText;
+  const measure = (typeof measureText === 'function') ? measureText : fontMeasureText;
   const st = styleName || cfg.style || 'cozy';
 
   const topText = cfg.topText;
