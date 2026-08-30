@@ -399,6 +399,47 @@ function fontMeasureText(text, fontSpec) {
   return w * scale;
 }
 
+// ---------------------------------------------------------------------------
+// Node-side @font-face embedding.
+// Embeds the bundled Inter TTFs as base64 data-URIs inside the generated SVG
+// <defs>, so sharp/librsvg (and any SVG renderer) uses the real Inter font
+// with no system-font installation. Weights 400/500/700 cover every style.
+// ---------------------------------------------------------------------------
+let fontFaceCache = null;
+function getFontFaceEmbed() {
+  if (fontFaceCache) return fontFaceCache;
+  let fs, path;
+  try {
+    fs = require('fs');
+    path = require('path');
+  } catch (e) {
+    fontFaceCache = '';
+    return fontFaceCache;
+  }
+  const dir = path.join(__dirname, 'assets', 'fonts');
+  const files = {
+    400: 'Inter_400.ttf',
+    500: 'Inter_500.ttf',
+    700: 'Inter_700.ttf'
+  };
+  let css = '';
+  for (const [weight, file] of Object.entries(files)) {
+    const p = path.join(dir, file);
+    if (!fs.existsSync(p)) continue;
+    try {
+      const b64 = fs.readFileSync(p).toString('base64');
+      css += '    @font-face {\n';
+      css += '      font-family: \'Inter\';\n';
+      css += '      font-style: normal;\n';
+      css += '      font-weight: ' + weight + ';\n';
+      css += '      src: url(data:font/truetype;charset=utf-8;base64,' + b64 + ') format(\'truetype\');\n';
+      css += '    }\n';
+    } catch (e) { /* skip this weight */ }
+  }
+  fontFaceCache = css ? ('  <style>\n' + css + '  </style>\n') : '';
+  return fontFaceCache;
+}
+
 function createMeasureText() {
   if (typeof module === 'object' && module.exports) {
     return fontMeasureText;
@@ -580,6 +621,10 @@ function buildBadgeSvg(rawCfg, styleName, faIcon, measureText, opts) {
     shadowColor: textShadowColor,
     shadowBlur: textShadowBlur
   });
+
+  if (opts.embedFonts !== false && typeof module === 'object' && module.exports) {
+    svgMarkup += getFontFaceEmbed();
+  }
 
   svgMarkup += '  </defs>\n\n  <!-- Background Card Base -->\n';
   svgMarkup += '  <rect width="' + width + '" height="' + height + '" fill="url(#badge-bg-' + st + ')" rx="' + radius + '"/>\n';

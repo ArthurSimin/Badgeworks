@@ -218,7 +218,7 @@ async function renderBadgeFromParams(params) {
   if (cfg.iconMode === 'fontawesome') {
     faIcon = await resolveFaIcon(cfg.faIconInput || `${cfg.faPack} fa-${cfg.faIconName}`);
   }
-  const result = BadgeCore.buildBadgeSvg(cfg, cfg.style || null, faIcon, null, {});
+  const result = BadgeCore.buildBadgeSvg(cfg, cfg.style || null, faIcon, null, { embedFonts: true });
   if (result.svg.includes('<!-- FA_ICON_SLOT -->')) {
     // Icon could not be resolved (e.g. bad name); fall back to "?" placeholder like the app.
     result.svg = result.svg.replace('<!-- FA_ICON_SLOT -->', '');
@@ -335,11 +335,13 @@ async function handleApi(req, res, url) {
       const png = await sharp(svgBuffer, { density: 72 * SCALE }).png().toBuffer();
       pngBase64 = png.toString('base64');
     }
+    // Return a slim SVG (strip the @font-face embedding) so Discord code blocks stay small.
+    const slimSvg = result.svg.replace(/  <style>\n(?:    @font-face \{[\s\S]*?\n    \}\n)*  <\/style>\n/g, '');
     sendJson(res, 200, {
       format: 'svg',
       width: result.width,
       height: result.height,
-      svg: result.svg,
+      svg: slimSvg,
       png: pngBase64, // base64-encoded PNG (3x scale); null if sharp is unavailable
     });
   } catch (e) {
