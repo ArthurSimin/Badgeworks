@@ -41,7 +41,7 @@
 
   * Cozy (64px) — Full 2-line title & subtitle
   * Compact (40px) — Sleek single-line text
-  * Cozy Minimal (56×56) — Icon-only square badge
+  * Cozy Minimal (64×64) — Icon-only square badge
   * Compact Minimal (40×40) — Small icon-only square badge
 
 * **Pixel-Perfect Vector Geometry**:
@@ -85,11 +85,95 @@ You can use the live website directly at [arthursimin.github.io/Devin-badge-stud
 
 2. Open [`index.html`](index.html) in any modern web browser. No Node.js or server setup required.
 
+## API Server
+
+The same badge engine powers a small HTTP API (Node built-ins only + [sharp](https://sharp.pixelplumbing.com/)) so scripts and Discord bots can generate badges on demand. It also serves the static site on the same port.
+
+### Setup
+
+```bash
+npm install          # installs sharp (+ optional discord.js for the bot example)
+node scripts/manage-keys.js generate   # creates an API key (prints once)
+node scripts/manage-keys.js list       # list keys
+node scripts/manage-keys.js revoke <key>
+npm start            # starts the server on :8080 (PORT to change)
+```
+
+Alternatively set `BADGEWORKS_API_KEY=key1,key2` (comma-separated) to skip `keys.json`.
+
+### Authentication
+
+Every `/api/*` request needs an API key via **one** of:
+
+* `Authorization: Bearer <key>`
+* `X-API-Key: <key>`
+* `?key=<key>` query parameter
+
+Missing/invalid keys get `401`.
+
+### Endpoints
+
+| Endpoint | Returns |
+| --- | --- |
+| `GET /api/presets` | List of preset icon keys + brand metadata |
+| `GET /api/styles` | `["cozy","compact","cozy-minimal","compact-minimal"]` |
+| `GET /api/gradients` | Background gradient presets |
+| `GET /api/badge.svg` | Raw SVG badge (`image/svg+xml`) |
+| `GET /api/badge.png` | Rasterized PNG (`image/png`, 3× scale, `BADGEWORKS_SCALE` to change) |
+| `GET/POST /api/badge` | JSON `{ svg, png (base64), width, height, format }` |
+
+Badge options are passed as query params (GET) or a JSON body (POST). All fields mirror the website's saved-config format — see `badge-core.js` `DEFAULT_CONFIG`. Common ones:
+
+```
+topText, bottomText, style, presetKey, iconMode, logoPosition,
+bgStops (#a,#b,#c...), bgGradPreset, textColor, radius, paddingRight,
+showDisk, diskColor, logoColor, useCustomLogoColor, useLogoStroke,
+logoStrokeColor, logoStrokeWidth, useLogoShadow, logoShadowColor, logoShadowBlur,
+useTextGrad, textGradTop, textGradBot, useTextStroke, textStrokeColor,
+textStrokeWidth, subtitleColor, useTextShadow, textShadowColor, textShadowBlur,
+diskDiameter, userLogoScale, faPack, faIconName, faIconInput
+```
+
+### Examples
+
+```bash
+# PNG
+curl -H "Authorization: Bearer $KEY" \
+  "http://localhost:8080/api/badge.png?topText=Available%20on&bottomText=GitHub&presetKey=github&style=cozy"
+
+# SVG + PNG in one JSON response
+curl -H "X-API-Key: $KEY" \
+  "http://localhost:8080/api/badge?topText=Made%20with&bottomText=React&presetKey=react&logoPosition=right&showDisk=true"
+
+# POST (fontawesome icon)
+curl -X POST -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"topText":"Hello","bottomText":"World","style":"compact","iconMode":"fontawesome","faIconInput":"fa-brands fa-github"}' \
+  http://localhost:8080/api/badge
+```
+
+### Notes
+
+* Server-side text layout uses a font-width heuristic (`approxMeasureText`); the browser app measures Inter precisely, so widths can differ slightly. Fonts fall back to system sans-serif on the server.
+* FontAwesome icons are fetched from the jsDelivr CDN at request time (same as the app) and cached in memory.
+
+## Discord bot (example)
+
+`examples/discord-bot/bot.js` is a minimal [discord.js](https://discord.js.org) bot that adds a `/badge` slash command: it calls the API and replies with the PNG and the SVG source in a code block.
+
+```bash
+npm install        # installs discord.js (devDependency)
+DISCORD_TOKEN=xxx API_URL=http://localhost:8080 API_KEY=yyy npm run bot
+```
+
 ## Structure
 
 * `index.html` — Application UI structure
 * `index.css` — Styling and responsive layout
-* `app.js` — Core application logic and rendering engine
+* `app.js` — Browser app logic (DOM glue on top of the shared engine)
+* `badge-core.js` — Pure rendering engine shared by the app and the API server
+* `server.js` — HTTP API server (Node built-ins + sharp)
+* `scripts/manage-keys.js` — API key management CLI
+* `examples/discord-bot/` — discord.js bot example
 
 ## License
 

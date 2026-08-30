@@ -1,0 +1,23 @@
+{
+  "name": "badgeworks",
+  "version": "1.0.0",
+  "description": "Badge generator with a browser app and an API-key-protected HTTP API (PNG + SVG) for Discord bots and scripts.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "keygen": "node scripts/manage-keys.js generate",
+    "keys": "node scripts/manage-keys.js list",
+    "revoke": "node scripts/manage-keys.js revoke",
+    "bot": "node examples/discord-bot/bot.js"
+  },
+  "dependencies": {
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "discord.js": "^14.15.3"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
