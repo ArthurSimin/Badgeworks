@@ -1033,7 +1033,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
     extractFontAwesomeSvg(faIconClass).then((fa) => {
       if (token !== renderToken) return; // Stale render — a newer one superseded this
       if (!fa) return; // Leave the placeholder if icon not found
-      const realIcon = `<svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${fa.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"${logoFilterAttr}><path d="${fa.pathData}"/></svg>`;
+      const realIcon = `<g${logoFilterAttr}><svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${fa.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${fa.pathData}"/></svg></g>`;
       const finalSvg = svgMarkup.replace('<!-- FA_ICON_SLOT -->', realIcon);
       document.getElementById('badge-stage').innerHTML = finalSvg;
       document.getElementById('badge-size-display').innerText = `${width} × ${height} px`;
@@ -1484,7 +1484,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
     const imgY = Math.round((height - imgSize) / 2);
     const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : textColor);
     if (faIcon) {
-      svgMarkup += `  <!-- FontAwesome Icon -->\n  <svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${faIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"${logoFilterAttr}><path d="${faIcon.pathData}"/></svg>\n`;
+      svgMarkup += `  <!-- FontAwesome Icon -->\n  <g${logoFilterAttr}><svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${faIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${faIcon.pathData}"/></svg></g>\n`;
     } else {
       // No resolved icon (offline or fetch pending) — keep exported files visually complete
       svgMarkup += `  <!-- FontAwesome Placeholder -->\n  <text x="${Math.round(iconX + imgSize / 2)}" y="${Math.round(height / 2)}" fill="#ffffff" font-size="${effectiveLogoSize}" font-family="'Dosis', 'Inter', sans-serif" font-weight="600" text-anchor="middle" dominant-baseline="central" dy="-0.05em"${logoFilterAttr}>?</text>\n`;
