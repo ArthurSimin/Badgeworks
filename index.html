@@ -215,6 +215,7 @@
           <div class="segmented-control">
             <button class="seg-btn active" id="seg-preset" onclick="setIconMode('preset')">Preset Icons</button>
             <button class="seg-btn" id="seg-fontawesome" onclick="setIconMode('fontawesome')">FontAwesome</button>
+            <button class="seg-btn" id="seg-thesvg" onclick="setIconMode('thesvg')">theSVG</button>
             <button class="seg-btn" id="seg-upload" onclick="setIconMode('upload')">Upload Image / SVG</button>
             <button class="seg-btn" id="seg-raw" onclick="setIconMode('raw')">Paste SVG Code</button>
           </div>
@@ -233,6 +234,7 @@
               <option value="deno">Deno</option>
               <option value="rust">Rust</option>
               <option value="git">Git</option>
+              <option value="gitlab">GitLab</option>
               <option value="steam">Steam</option>
               <option value="spotify">Spotify</option>
               <option value="youtube">YouTube</option>
@@ -251,27 +253,42 @@
                   <option value="fa-brands">fa-brands</option>
                   <option value="fa-solid">fa-solid</option>
                   <option value="fa-regular">fa-regular</option>
-                  <option value="fa-light">fa-light</option>
-                  <option value="fa-thin">fa-thin</option>
-                  <option value="fa-duotone">fa-duotone</option>
-                  <option value="fa-sharp-solid">fa-sharp-solid</option>
-                  <option value="fa-sharp-regular">fa-sharp-regular</option>
-                  <option value="fa-sharp-light">fa-sharp-light</option>
-                  <option value="fa-sharp-thin">fa-sharp-thin</option>
-                  <option value="fa-pixel">fa-pixel</option>
-                  <option value="fa-mosaic">fa-mosaic</option>
-                  <option value="fa-vellum">fa-vellum</option>
-                  <option value="fa-slab">fa-slab</option>
                 </select>
                 <div class="fa-name-wrap">
                   <span class="fa-prefix">fa-</span>
-                  <input type="text" id="fa-icon-name" class="input-text" placeholder="github" value="github" oninput="updateFontAwesomePreview(); renderBadge();">
+                  <input type="text" id="fa-icon-name" class="input-text" list="fa-icon-list" placeholder="github" value="github" oninput="updateFontAwesomePreview(); renderBadge();">
                 </div>
               </div>
+              <datalist id="fa-icon-list"></datalist>
               <span style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.25rem;">Browse icons at <a href="https://fontawesome.com/icons" target="_blank" style="color: var(--accent);">fontawesome.com/icons</a></span>
             </div>
             <div class="fa-preview" id="fa-preview" style="margin-top: 0.75rem; padding: 1rem; background: var(--bg-input); border-radius: var(--radius-sm); text-align: center;">
               <i class="fa-brands fa-github" style="font-size: 48px; color: var(--text-primary);"></i>
+              <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">Icon Preview</p>
+            </div>
+          </div>
+
+          <!-- Mode 2: theSVG Brand Icons (thesvg.org) -->
+          <div id="icon-mode-thesvg" class="mode-container" style="display: none;">
+            <div class="field-group">
+              <label for="thesvg-slug">theSVG Icon</label>
+              <div class="fa-input-row">
+                <select id="thesvg-variant-select" class="input-text fa-pack-select" onchange="renderBadge();">
+                  <option value="default">default</option>
+                  <option value="color">color</option>
+                  <option value="mono">mono</option>
+                  <option value="light">light</option>
+                  <option value="dark">dark</option>
+                  <option value="wordmark">wordmark</option>
+                </select>
+                <div class="fa-name-wrap">
+                  <input type="text" id="thesvg-slug" class="input-text" list="thesvg-slug-list" placeholder="github" value="github" oninput="updateTheSvgPreview(); renderBadge();">
+                </div>
+              </div>
+              <datalist id="thesvg-slug-list"></datalist>
+              <span style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.25rem;">6,500+ free brand icons — browse at <a href="https://thesvg.org" target="_blank" style="color: var(--accent);">thesvg.org</a></span>
+            </div>
+            <div class="fa-preview" id="thesvg-preview" style="margin-top: 0.75rem; padding: 1rem; background: var(--bg-input); border-radius: var(--radius-sm); text-align: center;">
               <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">Icon Preview</p>
             </div>
           </div>
