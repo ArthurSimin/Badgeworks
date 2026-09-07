@@ -213,7 +213,7 @@ body {
 .section-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
 }
 
 .section-title {
@@ -311,10 +311,17 @@ body {
   gap: 0.35rem;
 }
 
+/* Slider cells: pin the label to the top and the track to the bottom so slider
+   rows line up with the (taller) color-picker cells next to them. */
+.field-group:has(> .range-slider) {
+  justify-content: space-between;
+}
+
 .field-group label {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-secondary);
+  text-align: center;
 }
 
 .input-text {
@@ -332,6 +339,31 @@ body {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.15);
+}
+
+/* Full-width mode inputs (preset dropdown, raw SVG box) so they span the
+   container edge-to-edge like the segmented controls above them. */
+#preset-select,
+#raw-svg-code {
+  width: 100%;
+}
+
+/* Breathing room for the native dropdown chevron (it otherwise hugs the edge). */
+#preset-select {
+  padding-right: 2.5rem;
+}
+
+/* Custom dropdown chevron on all selects: the native arrow's position is
+   UA-specific (padding doesn't move it in some Chrome versions), so draw our
+   own at an exact spot instead. */
+select.input-text {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a6adc8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 12px;
+  padding-right: 2.5rem;
 }
 
 .textarea-code {
@@ -402,6 +434,7 @@ body {
 .upload-hint {
   font-size: 0.7rem;
   color: var(--text-tertiary);
+  text-align: center;
 }
 
 .upload-preview-bar {
@@ -539,6 +572,31 @@ body {
   justify-content: center;
 }
 
+/* Centered, wrapping toggle row (icon/text effects): items stay grouped and
+   centered at any width instead of scattering across grid columns. */
+.check-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.5rem;
+}
+
+.check-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.check-item input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .checkbox-field label {
   display: flex;
   align-items: center;
@@ -557,6 +615,7 @@ body {
   letter-spacing: 0.05em;
   color: var(--text-tertiary);
   margin-top: 0.5rem;
+  text-align: center;
 }
 
 /* Controls that depend on a toggle being on are dimmed + disabled */
@@ -608,11 +667,11 @@ input[disabled].fx-dim {
   background: #11111b;
   border: 1px dashed rgba(205, 214, 244, 0.18);
   border-radius: var(--radius-md);
-  padding: 3.5rem 1.5rem;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 180px;
+  min-height: 0;
   background-image:
     linear-gradient(45deg, #181825 25%, transparent 25%),
     linear-gradient(-45deg, #181825 25%, transparent 25%),
@@ -620,6 +679,12 @@ input[disabled].fx-dim {
     linear-gradient(-45deg, transparent 75%, #181825 75%);
   background-size: 16px 16px;
   background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+}
+
+/* Preview badge scales to fill the stage (vector — stays crisp).
+   Exports are unaffected: they use freshly generated native-size markup. */
+.badge-stage svg {
+  display: block;
 }
 
 /* Export Buttons */

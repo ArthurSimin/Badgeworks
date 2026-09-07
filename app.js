@@ -196,6 +196,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('dragover', (e) => e.preventDefault());
   document.addEventListener('drop', (e) => e.preventDefault());
 
+  // Refit the scaled preview when the viewport changes (sidebar/stage width)
+  let fitRaf = 0;
+  window.addEventListener('resize', () => {
+    cancelAnimationFrame(fitRaf);
+    fitRaf = requestAnimationFrame(fitPreviewSvg);
+  });
+
   // Wait for fonts to load before initial render
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(() => {
@@ -343,13 +350,21 @@ function parseFontAwesomeInput(raw) {
 }
 
 function updateFontAwesomePreview() {
-  refreshFaPackOption();
   const iconClass = parseFontAwesomeInput();
   const faPreview = document.getElementById('fa-preview');
   if (!faPreview) return;
 
   const iconElement = faPreview.querySelector('i');
   if (iconElement) iconElement.className = iconClass;
+}
+
+// Slug-field handler: auto-correct the pack for the typed icon, then preview.
+// (Pack-dropdown changes must NOT run the correction — it would snap the
+// user's pick back when the icon doesn't ship in that pack.)
+function onFaSlugInput() {
+  refreshFaPackOption();
+  updateFontAwesomePreview();
+  renderBadge();
 }
 
 // Lazily-loaded FontAwesome metadata: icon name -> { label, freeStyles }.
@@ -462,12 +477,11 @@ function extractFontAwesomeSvg(iconClass) {
 document.addEventListener('DOMContentLoaded', () => {
   const faNameInput = document.getElementById('fa-icon-name');
   const faPackSelect = document.getElementById('fa-pack-select');
-  const onFaChange = () => {
+  if (faNameInput) faNameInput.addEventListener('input', onFaSlugInput);
+  if (faPackSelect) faPackSelect.addEventListener('change', () => {
     updateFontAwesomePreview();
     renderBadge();
-  };
-  if (faNameInput) faNameInput.addEventListener('input', onFaChange);
-  if (faPackSelect) faPackSelect.addEventListener('change', onFaChange);
+  });
 });
 
 // --- theSVG brand icons (https://thesvg.org) --------------------------------
@@ -631,16 +645,20 @@ function updateTheSvgPreview() {
   });
 }
 
-// Listen for theSVG input changes to update preview
+// Listen for theSVG input changes to update preview.
+// (Variant-dropdown changes must NOT refresh the variant options — that would
+// snap the user's pick back when the icon doesn't ship that variant.)
 document.addEventListener('DOMContentLoaded', () => {
   const slugInput = document.getElementById('thesvg-slug');
   const variantSelect = document.getElementById('thesvg-variant-select');
-  const onTheSvgChange = () => {
+  const onTheSvgSlugInput = () => {
     updateTheSvgPreview();
     renderBadge();
   };
-  if (slugInput) slugInput.addEventListener('input', onTheSvgChange);
-  if (variantSelect) variantSelect.addEventListener('change', onTheSvgChange);
+  if (slugInput) slugInput.addEventListener('input', onTheSvgSlugInput);
+  if (variantSelect) variantSelect.addEventListener('change', () => {
+    renderBadge();
+  });
 });
 
 // Handle File Upload (PNG, JPG, SVG)
@@ -816,6 +834,29 @@ function measureText(text, fontSpec) {
 // Incremented on every render; lets async FontAwesome swaps detect (and skip) stale renders
 let renderToken = 0;
 
+// Native-size markup of the last committed preview (display scaling is applied
+// to the live DOM node only, so exports and the SVG tab stay native-sized)
+let cachedNativeSvg = '';
+
+// Scale the live preview badge to fill the stage width exactly. Vector art
+// stays crisp at any scale, so no cap — the stage always hugs the badge.
+function fitPreviewSvg() {
+  const stage = document.getElementById('badge-stage');
+  if (!stage) return;
+  const svg = stage.querySelector(':scope > svg');
+  if (!svg) return;
+  const w = parseFloat(svg.getAttribute('width'));
+  const h = parseFloat(svg.getAttribute('height'));
+  if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(h) || h <= 0) return;
+  const cs = getComputedStyle(stage);
+  const avail = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  if (!Number.isFinite(avail) || avail <= 0) return;
+  const scale = avail / w;
+  if (!Number.isFinite(scale) || scale <= 0) return;
+  svg.style.width = `${Math.max(1, Math.round(w * scale))}px`;
+  svg.style.height = `${Math.max(1, Math.round(h * scale))}px`;
+}
+
 // Background gradient presets (2–7 stops each)
 const BG_GRADIENT_PRESETS = {
   rainbow: ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#007fff', '#0000ff', '#8b00ff'],
@@ -936,16 +977,43 @@ function syncDependentControls() {
   dep(document.getElementById('text-shadow-toggle')?.checked || false, ['text-shadow-color', 'text-shadow-blur']);
   dep(document.getElementById('show-disk-toggle')?.checked || false, ['disk-color', 'disk-size-slider']);
   dep(document.getElementById('custom-logo-color-toggle')?.checked || false, ['logo-color']);
-  dep(document.getElementById('logo-stroke-toggle')?.checked || false, ['logo-stroke-color', 'logo-stroke-width']);
+  const logoStrokeOn = document.getElementById('logo-stroke-toggle')?.checked || false;
+  const logoStrokeGradOn = document.getElementById('logo-stroke-grad-toggle')?.checked || false;
+  // Solid outline color is unused while the gradient outline is on
+  dep(logoStrokeOn && !logoStrokeGradOn, ['logo-stroke-color']);
+  dep(logoStrokeOn, ['logo-stroke-width']);
+  dep(logoStrokeOn && logoStrokeGradOn, ['logo-stroke-grad-top', 'logo-stroke-grad-bot']);
   dep(document.getElementById('logo-shadow-toggle')?.checked || false, ['logo-shadow-color', 'logo-shadow-blur']);
-  // The icon-size slider only drives scalable preset icons (e.g. github/python/react/rust).
-  const scalablePreset = state.iconMode === 'preset'
-    && (OFFICIAL_BRAND_ICONS[document.getElementById('preset-select')?.value]?.scalable === true);
+  // The icon-size slider drives every logo except full-artboard custom-SVG
+  // presets (which ignore it by design) — path presets, scalable customs,
+  // and FontAwesome/theSVG/upload/raw modes all scale with it.
+  const presetInfo = OFFICIAL_BRAND_ICONS[document.getElementById('preset-select')?.value];
+  const fixedArtboard = state.iconMode === 'preset'
+    && !!presetInfo?.isCustomSvg && presetInfo.scalable !== true;
   const slider = document.getElementById('icon-scale-slider');
   if (slider) {
-    slider.disabled = !scalablePreset;
-    slider.classList.toggle('fx-dim', !scalablePreset);
+    slider.disabled = fixedArtboard;
+    slider.classList.toggle('fx-dim', fixedArtboard);
   }
+}
+
+// Disk-shaped convolution kernel for round (Photoshop-style) outline dilation.
+// feMorphology dilates with a SQUARE kernel, which makes diagonals ~1.4x
+// thicker than axes at small widths and turns circles into rounded squares at
+// large widths. A disk kernel keeps the ring uniform and circular at any size.
+// divisor MUST stay 1 (the default sums the kernel, which would normalize the
+// dilation into a majority vote); the discrete step then keeps any pixel with
+// at least one opaque neighbor inside the disk.
+function strokeDiskKernel(radius) {
+  const r = Math.max(0.5, Number(radius) || 0);
+  const R = Math.max(1, Math.ceil(r));
+  const vals = [];
+  for (let y = -R; y <= R; y++) {
+    for (let x = -R; x <= R; x++) {
+      vals.push(x * x + y * y <= r * r ? 1 : 0);
+    }
+  }
+  return { order: 2 * R + 1, matrix: vals.join(' ') };
 }
 
 // Build the combined logo FX filter (drop shadow + outline stroke + custom tint), or '' if unused.
@@ -961,7 +1029,13 @@ function buildLogoFxFilter(id, opts) {
     m += `      <feComposite in="shadowColor" in2="shadowBlur" operator="in" result="shadow"/>\n`;
   }
   if (useStroke) {
-    m += `      <feMorphology operator="dilate" radius="${strokeWidth}" in="SourceAlpha" result="expanded"/>\n`;
+    // Round outside stroke: disk-kernel dilation (uniform width, circular at any
+    // size), hardened with a discrete step — crisp, no blur.
+    const kernel = strokeDiskKernel(strokeWidth);
+    m += `      <feConvolveMatrix in="SourceAlpha" order="${kernel.order}" kernelMatrix="${kernel.matrix}" divisor="1" bias="0" preserveAlpha="false" result="dilated"/>\n`;
+    m += `      <feComponentTransfer in="dilated" result="expanded">\n`;
+    m += `        <feFuncA type="discrete" tableValues="0 1"/>\n`;
+    m += `      </feComponentTransfer>\n`;
     m += `      <feFlood flood-color="${strokeColor}" result="strokeColor"/>\n`;
     m += `      <feComposite in="strokeColor" in2="expanded" operator="in" result="stroke"/>\n`;
   }
@@ -976,6 +1050,30 @@ function buildLogoFxFilter(id, opts) {
   m += `      </feMerge>\n`;
   m += `    </filter>\n`;
   return m;
+}
+
+// Silhouette filter for gradient outlines: same round disk-kernel dilation as
+// the solid stroke above (filters can't paint gradients, so the outline is a
+// gradient rect clipped by this silhouette via a mask — see buildGradStrokeLayer).
+function buildStrokeSilFilter(id, radius) {
+  const kernel = strokeDiskKernel(radius);
+  return `    <filter id="${id}" x="-50%" y="-50%" width="200%" height="200%">\n` +
+    `      <feConvolveMatrix in="SourceAlpha" order="${kernel.order}" kernelMatrix="${kernel.matrix}" divisor="1" bias="0" preserveAlpha="false" result="dilated"/>\n` +
+    `      <feComponentTransfer in="dilated" result="smoothEdge">\n` +
+    `        <feFuncA type="discrete" tableValues="0 1"/>\n` +
+    `      </feComponentTransfer>\n` +
+    `    </filter>\n`;
+}
+
+// Gradient outline layer: a full-badge gradient rect clipped to the logo's
+// smoothed silhouette. `logoCopy` is the logo markup WITHOUT fx filters
+// (tint/shadow would leak extra alpha into the silhouette). mask-type="alpha"
+// so dark logos mask correctly too (luminance masks would drop them).
+function buildGradStrokeLayer({ maskId, silFilterId, gradId, width, height, logoCopy }) {
+  return `  <mask id="${maskId}" maskUnits="userSpaceOnUse" x="0" y="0" width="${width}" height="${height}" mask-type="alpha">\n` +
+    `    <g filter="url(#${silFilterId})">\n${logoCopy}\n    </g>\n` +
+    `  </mask>\n` +
+    `  <rect x="0" y="0" width="${width}" height="${height}" fill="url(#${gradId})" mask="url(#${maskId})"/>\n`;
 }
 
 // Main Render Logic
@@ -1145,9 +1243,17 @@ function renderBadge() {
   const useLogoStroke = document.getElementById('logo-stroke-toggle')?.checked || false;
   const logoStrokeColor = document.getElementById('logo-stroke-color')?.value || '#ffffff';
   const logoStrokeWidth = document.getElementById('logo-stroke-width')?.value || '2';
+  const useLogoStrokeGrad = document.getElementById('logo-stroke-grad-toggle')?.checked || false;
+  const logoStrokeGradTop = document.getElementById('logo-stroke-grad-top')?.value || '#FFFFFF';
+  const logoStrokeGradBot = document.getElementById('logo-stroke-grad-bot')?.value || '#61DAFB';
   const useLogoShadow = document.getElementById('logo-shadow-toggle')?.checked || false;
   const logoShadowColor = document.getElementById('logo-shadow-color')?.value || '#000000';
   const logoShadowBlur = parseFloat(document.getElementById('logo-shadow-blur')?.value || '2');
+
+  // Solid and gradient outlines are mutually exclusive (same toggle + width);
+  // both stay suppressed while the disk is shown, like before.
+  const solidStrokeActive = useLogoStroke && !showDisk && !useLogoStrokeGrad;
+  const gradStrokeActive = useLogoStroke && !showDisk && useLogoStrokeGrad;
 
   if (document.getElementById('logo-stroke-val')) {
     document.getElementById('logo-stroke-val').innerText = `${logoStrokeWidth}px`;
@@ -1175,8 +1281,9 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
   // Combined Logo Filter (Universal Tinting for all Uploads/Images/SVGs + Logo Outline Stroke + Drop Shadow)
   // NOTE: tint/stroke are suppressed when the disk is shown, so the filter attribute must
   // use the same effective flags — otherwise we'd reference a filter that was never defined.
+  // (Gradient outlines render as a separate masked layer below, not in this filter.)
   const effectiveLogoTint = useCustomLogoColor && !showDisk;
-  const effectiveLogoStroke = useLogoStroke && !showDisk;
+  const effectiveLogoStroke = solidStrokeActive;
   svgMarkup += buildLogoFxFilter('badge-logo-fx', {
     useTint: effectiveLogoTint,
     tintColor: customLogoColor,
@@ -1187,6 +1294,12 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
     shadowColor: logoShadowColor,
     shadowBlur: logoShadowBlur
   });
+
+  // Gradient outline defs (silhouette filter + vertical gradient paint)
+  if (gradStrokeActive) {
+    svgMarkup += buildStrokeSilFilter('badge-logo-stroke-sil', logoStrokeWidth);
+    svgMarkup += `    <linearGradient id="badge-logo-stroke-grad" x1="0" y1="0" x2="0" y2="1">\n      <stop stop-color="${logoStrokeGradTop}"/>\n      <stop offset="1" stop-color="${logoStrokeGradBot}"/>\n    </linearGradient>\n`;
+  }
 
   // Text drop shadow filter (title + subtitle)
   svgMarkup += buildLogoFxFilter('badge-text-fx', {
@@ -1202,6 +1315,12 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
   const useLogoFxFilter = effectiveLogoTint || effectiveLogoStroke || useLogoShadow;
   const logoFilterAttr = useLogoFxFilter ? ' filter="url(#badge-logo-fx)"' : '';
   const textShadowAttr = useTextShadow ? ' filter="url(#badge-text-fx)"' : '';
+
+  // Gradient outline layer for a filter-free logo copy (emitted under the logo
+  // in each branch below); '' unless the gradient outline is active.
+  const gradStrokeLayer = (logoCopy) => gradStrokeActive
+    ? buildGradStrokeLayer({ maskId: 'badge-logo-stroke-mask', silFilterId: 'badge-logo-stroke-sil', gradId: 'badge-logo-stroke-grad', width, height, logoCopy })
+    : '';
 
   // Logo X placement: left (default), right (text on the left), or centered (minimal).
   // Right mode mirrors left mode, so the logo box sits at logoBoxStart (or stays flush to the
@@ -1255,24 +1374,30 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
           const gx = height / 2 - (bb.x + bb.w / 2) * s;
           const gy = height / 2 - (bb.y + bb.h / 2) * s;
           if (isMinimal) {
+            svgMarkup += gradStrokeLayer(`  <g transform="translate(${gx.toFixed(2)}, ${gy.toFixed(2)}) scale(${s.toFixed(6)})">\n    ${svgContent}\n  </g>\n`);
             svgMarkup += `  <!-- Official Custom Vector (Scalable Cropped, Minimal Centered) -->\n  <g transform="translate(${gx.toFixed(2)}, ${gy.toFixed(2)}) scale(${s.toFixed(6)})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
           } else {
+            svgMarkup += gradStrokeLayer(`  <g transform="translate(${(iconX - bb.x * s).toFixed(2)}, ${gy.toFixed(2)}) scale(${s.toFixed(6)})">\n    ${svgContent}\n  </g>\n`);
             svgMarkup += `  <!-- Official Custom Vector (Scalable Cropped, Sized) -->\n  <g transform="translate(${(iconX - bb.x * s).toFixed(2)}, ${gy.toFixed(2)}) scale(${s.toFixed(6)})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
           }
         } else if (isMinimal) {
           const off = Math.round((height - logoBox) / 2);
+          svgMarkup += gradStrokeLayer(`  <g transform="translate(${off}, ${off}) scale(${s})">\n    ${svgContent}\n  </g>\n`);
           svgMarkup += `  <!-- Official Custom Vector (Scalable, Minimal Centered) -->\n  <g transform="translate(${off}, ${off}) scale(${s})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
         } else {
           const off = Math.round((height - logoBox) / 2);
+          svgMarkup += gradStrokeLayer(`  <g transform="translate(${iconX}, ${off}) scale(${s})">\n    ${svgContent}\n  </g>\n`);
           svgMarkup += `  <!-- Official Custom Vector (Scalable, Sized) -->\n  <g transform="translate(${iconX}, ${off}) scale(${s})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
         }
       } else if (isMinimal) {
         const minimalScale = height / 64;
         const centerOffsetX = height * (0.5 - 32 / 64);
+        svgMarkup += gradStrokeLayer(`  <g transform="translate(${centerOffsetX.toFixed(2)}, 0) scale(${minimalScale})">\n    ${svgContent}\n  </g>\n`);
         svgMarkup += `  <!-- Official Custom Vector (Minimal Centered) -->\n  <g transform="translate(${centerOffsetX.toFixed(2)}, 0) scale(${minimalScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
       } else {
         // For cozy/compact styles, center vertically by translating Y by (height - 64*heightScale) / 2
         const yOffset = (height - 64 * heightScale) / 2;
+        svgMarkup += gradStrokeLayer(`  <g transform="translate(${iconXFull}, ${yOffset.toFixed(2)}) scale(${heightScale})">\n    ${svgContent}\n  </g>\n`);
         svgMarkup += `  <!-- Official Custom Vector (Scaled) -->\n  <g transform="translate(${iconXFull}, ${yOffset.toFixed(2)}) scale(${heightScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
       }
     } else {
@@ -1280,11 +1405,13 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
       const iconY = Math.round((height - effectiveLogoSize) / 2);
       const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : brandInfo.color);
 
+      svgMarkup += gradStrokeLayer(`  <g transform="translate(${iconX}, ${iconY}) scale(${scaleFactor})" fill="${fillColor}">\n    <path d="${brandInfo.path}"/>\n  </g>\n`);
       svgMarkup += `  <!-- Official Brand Vector Path -->\n  <g transform="translate(${iconX}, ${iconY}) scale(${scaleFactor})" fill="${fillColor}"${logoFilterAttr}>\n    <path d="${brandInfo.path}"/>\n  </g>\n`;
     }
   } else if (state.iconMode === 'upload' && state.uploadedDataUrl) {
     const imgSize = effectiveLogoSize;
     const imgY = Math.round((height - imgSize) / 2);
+    svgMarkup += gradStrokeLayer(`  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"/>\n`);
     svgMarkup += `  <!-- Uploaded Image/SVG Logo -->\n  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
   } else if (state.iconMode === 'fontawesome' && !noLogo) {
     const faIconClass = parseFontAwesomeInput();
@@ -1324,6 +1451,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
     const placeholderIcon = `<text x="${Math.round(iconX + imgSize / 2)}" y="${Math.round(height / 2)}" fill="#ffffff" font-size="${effectiveLogoSize}" font-family="'Dosis', 'Inter', sans-serif" font-weight="600" text-anchor="middle" dominant-baseline="central" dy="-0.05em"${logoFilterAttr}>?</text>`;
     const withPlaceholder = svgMarkup.replace('<!-- FA_ICON_SLOT -->', placeholderIcon);
     document.getElementById('badge-stage').innerHTML = withPlaceholder;
+    fitPreviewSvg();
     document.getElementById('badge-size-display').innerText = `${width} × ${height} px`;
     updateSnippetOutput(withPlaceholder, bottomText || 'Badge');
 
@@ -1331,9 +1459,11 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
     extractFontAwesomeSvg(faIconClass).then((fa) => {
       if (token !== renderToken) return; // Stale render — a newer one superseded this
       if (!fa) return; // Leave the placeholder if icon not found
-      const realIcon = `<g${logoFilterAttr}><svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${fa.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${fa.pathData}"/></svg></g>`;
-      const finalSvg = svgMarkup.replace('<!-- FA_ICON_SLOT -->', realIcon);
+      const faSvg = `<svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${fa.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${fa.pathData}"/></svg>`;
+      const realIcon = `<g${logoFilterAttr}>${faSvg}</g>`;
+      const finalSvg = svgMarkup.replace('<!-- FA_ICON_SLOT -->', gradStrokeLayer(`  ${faSvg}\n`) + realIcon);
       document.getElementById('badge-stage').innerHTML = finalSvg;
+      fitPreviewSvg();
       document.getElementById('badge-size-display').innerText = `${width} × ${height} px`;
       updateSnippetOutput(finalSvg, bottomText || 'Badge');
     });
@@ -1377,6 +1507,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
     const placeholderIcon3 = `<text x="${Math.round(iconX + imgSize / 2)}" y="${Math.round(height / 2)}" fill="#ffffff" font-size="${effectiveLogoSize}" font-family="'Dosis', 'Inter', sans-serif" font-weight="600" text-anchor="middle" dominant-baseline="central" dy="-0.05em"${logoFilterAttr}>?</text>`;
     const withPlaceholder3 = svgMarkup.replace('<!-- THESVG_ICON_SLOT -->', placeholderIcon3);
     document.getElementById('badge-stage').innerHTML = withPlaceholder3;
+    fitPreviewSvg();
     document.getElementById('badge-size-display').innerText = `${width} × ${height} px`;
     updateSnippetOutput(withPlaceholder3, bottomText || 'Badge');
 
@@ -1384,9 +1515,11 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
     extractTheSvg(theSvgSlug, theSvgVariant).then((ts) => {
       if (token !== renderToken) return; // Stale render — a newer one superseded this
       if (!ts) return; // Leave the placeholder if icon not found
-      const realIcon = `<g${logoFilterAttr}><svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${ts.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg">${ts.inner}</svg></g>`;
-      const finalSvg = svgMarkup.replace('<!-- THESVG_ICON_SLOT -->', realIcon);
+      const tsSvg = `<svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${ts.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg">${ts.inner}</svg>`;
+      const realIcon = `<g${logoFilterAttr}>${tsSvg}</g>`;
+      const finalSvg = svgMarkup.replace('<!-- THESVG_ICON_SLOT -->', gradStrokeLayer(`  ${tsSvg}\n`) + realIcon);
       document.getElementById('badge-stage').innerHTML = finalSvg;
+      fitPreviewSvg();
       document.getElementById('badge-size-display').innerText = `${width} × ${height} px`;
       updateSnippetOutput(finalSvg, bottomText || 'Badge');
     });
@@ -1395,6 +1528,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
   } else if (state.iconMode === 'raw' && state.rawSvgDataUrl) {
     const imgSize = effectiveLogoSize;
     const imgY = Math.round((height - imgSize) / 2);
+    svgMarkup += gradStrokeLayer(`  <image href="${state.rawSvgDataUrl}" xlink:href="${state.rawSvgDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"/>\n`);
     svgMarkup += `  <!-- Raw Pasted SVG Logo -->\n  <image href="${state.rawSvgDataUrl}" xlink:href="${state.rawSvgDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
   } else {
     const qX = Math.round(iconX + effectiveLogoSize / 2);
@@ -1440,6 +1574,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
 
   // Update Preview Stage & Dimensions Display
   document.getElementById('badge-stage').innerHTML = svgMarkup;
+  fitPreviewSvg();
   document.getElementById('badge-size-display').innerText = `${width} × ${height} px`;
 
   // Update Code Snippet Output
@@ -1470,7 +1605,7 @@ function setCodeTab(tab) {
   document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(`codetab-${tab}`).classList.add('active');
 
-  const svgMarkup = document.getElementById('badge-stage').innerHTML;
+  const svgMarkup = cachedNativeSvg || document.getElementById('badge-stage').innerHTML;
   const title = document.getElementById('bottom-text').value || 'Badge';
   updateSnippetOutput(svgMarkup, title);
 }
@@ -1478,6 +1613,9 @@ function setCodeTab(tab) {
 function updateSnippetOutput(svgMarkup, title) {
   const output = document.getElementById('snippet-output');
   if (!output) return;
+
+  // Cache the native markup so the SVG tab never picks up display scaling
+  if (svgMarkup) cachedNativeSvg = svgMarkup;
 
   if (state.codeTab === 'md') {
     output.innerText = `![${escapeMarkdownText(title)}](devin_badge.svg)`;
@@ -1755,9 +1893,17 @@ function generateBadgeForStyle(styleName, faIcon, theSvgIcon) {
   const useLogoStroke = document.getElementById('logo-stroke-toggle')?.checked || false;
   const logoStrokeColor = document.getElementById('logo-stroke-color')?.value || '#ffffff';
   const logoStrokeWidth = document.getElementById('logo-stroke-width')?.value || '2';
+  const useLogoStrokeGrad = document.getElementById('logo-stroke-grad-toggle')?.checked || false;
+  const logoStrokeGradTop = document.getElementById('logo-stroke-grad-top')?.value || '#FFFFFF';
+  const logoStrokeGradBot = document.getElementById('logo-stroke-grad-bot')?.value || '#61DAFB';
   const useLogoShadow = document.getElementById('logo-shadow-toggle')?.checked || false;
   const logoShadowColor = document.getElementById('logo-shadow-color')?.value || '#000000';
   const logoShadowBlur = parseFloat(document.getElementById('logo-shadow-blur')?.value || '2');
+
+  // Solid and gradient outlines are mutually exclusive (same toggle + width);
+  // both stay suppressed while the disk is shown, like before.
+  const solidStrokeActive = useLogoStroke && !showDisk && !useLogoStrokeGrad;
+  const gradStrokeActive = useLogoStroke && !showDisk && useLogoStrokeGrad;
 
   // Build SVG
   let svgMarkup = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}" height="${height}" fill="none" viewBox="0 0 ${width} ${height}">
@@ -1775,8 +1921,9 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
   }
 
   // Combined Logo Filter (Universal Tinting for all Uploads/Images/SVGs + Logo Outline Stroke + Drop Shadow)
+  // (Gradient outlines render as a separate masked layer below, not in this filter.)
   const effectiveExportTint = useCustomLogoColor && !showDisk;
-  const effectiveExportStroke = useLogoStroke && !showDisk;
+  const effectiveExportStroke = solidStrokeActive;
   svgMarkup += buildLogoFxFilter(`badge-logo-fx-${styleName}`, {
     useTint: effectiveExportTint,
     tintColor: customLogoColor,
@@ -1787,6 +1934,12 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
     shadowColor: logoShadowColor,
     shadowBlur: logoShadowBlur
   });
+
+  // Gradient outline defs (silhouette filter + vertical gradient paint)
+  if (gradStrokeActive) {
+    svgMarkup += buildStrokeSilFilter(`badge-logo-stroke-sil-${styleName}`, logoStrokeWidth);
+    svgMarkup += `    <linearGradient id="badge-logo-stroke-grad-${styleName}" x1="0" y1="0" x2="0" y2="1">\n      <stop stop-color="${logoStrokeGradTop}"/>\n      <stop offset="1" stop-color="${logoStrokeGradBot}"/>\n    </linearGradient>\n`;
+  }
 
   // Text drop shadow filter (title + subtitle)
   svgMarkup += buildLogoFxFilter(`badge-text-fx-${styleName}`, {
@@ -1802,6 +1955,12 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
   const useLogoFxFilter = effectiveExportTint || effectiveExportStroke || useLogoShadow;
   const logoFilterAttr = useLogoFxFilter ? ` filter="url(#badge-logo-fx-${styleName})"` : '';
   const textShadowAttr = useTextShadow ? ` filter="url(#badge-text-fx-${styleName})"` : '';
+
+  // Gradient outline layer for a filter-free logo copy (emitted under the logo
+  // in each branch below); '' unless the gradient outline is active.
+  const gradStrokeLayer = (logoCopy) => gradStrokeActive
+    ? buildGradStrokeLayer({ maskId: `badge-logo-stroke-mask-${styleName}`, silFilterId: `badge-logo-stroke-sil-${styleName}`, gradId: `badge-logo-stroke-grad-${styleName}`, width, height, logoCopy })
+    : '';
 
   // Logo X placement: left (default), right (text on the left), or centered (minimal).
   // Right mode mirrors left mode, so the logo box sits at logoBoxStart (or stays flush to the
@@ -1854,23 +2013,29 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
           const gx = height / 2 - (bb.x + bb.w / 2) * s;
           const gy = height / 2 - (bb.y + bb.h / 2) * s;
           if (isMinimal) {
+            svgMarkup += gradStrokeLayer(`  <g transform="translate(${gx.toFixed(2)}, ${gy.toFixed(2)}) scale(${s.toFixed(6)})">\n    ${svgContent}\n  </g>\n`);
             svgMarkup += `  <!-- Official Custom Vector (Scalable Cropped, Minimal Centered) -->\n  <g transform="translate(${gx.toFixed(2)}, ${gy.toFixed(2)}) scale(${s.toFixed(6)})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
           } else {
+            svgMarkup += gradStrokeLayer(`  <g transform="translate(${(iconX - bb.x * s).toFixed(2)}, ${gy.toFixed(2)}) scale(${s.toFixed(6)})">\n    ${svgContent}\n  </g>\n`);
             svgMarkup += `  <!-- Official Custom Vector (Scalable Cropped, Sized) -->\n  <g transform="translate(${(iconX - bb.x * s).toFixed(2)}, ${gy.toFixed(2)}) scale(${s.toFixed(6)})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
           }
         } else if (isMinimal) {
           const off = Math.round((height - logoBox) / 2);
+          svgMarkup += gradStrokeLayer(`  <g transform="translate(${off}, ${off}) scale(${s})">\n    ${svgContent}\n  </g>\n`);
           svgMarkup += `  <!-- Official Custom Vector (Scalable, Minimal Centered) -->\n  <g transform="translate(${off}, ${off}) scale(${s})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
         } else {
           const off = Math.round((height - logoBox) / 2);
+          svgMarkup += gradStrokeLayer(`  <g transform="translate(${iconX}, ${off}) scale(${s})">\n    ${svgContent}\n  </g>\n`);
           svgMarkup += `  <!-- Official Custom Vector (Scalable, Sized) -->\n  <g transform="translate(${iconX}, ${off}) scale(${s})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
         }
       } else if (isMinimal) {
         const minimalScale = height / 64;
         const centerOffsetX = height * (0.5 - 32 / 64);
+        svgMarkup += gradStrokeLayer(`  <g transform="translate(${centerOffsetX.toFixed(2)}, 0) scale(${minimalScale})">\n    ${svgContent}\n  </g>\n`);
         svgMarkup += `  <g transform="translate(${centerOffsetX.toFixed(2)}, 0) scale(${minimalScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
       } else {
         const yOffset = (height - 64 * heightScale) / 2;
+        svgMarkup += gradStrokeLayer(`  <g transform="translate(${iconXFull}, ${yOffset.toFixed(2)}) scale(${heightScale})">\n    ${svgContent}\n  </g>\n`);
         svgMarkup += `  <g transform="translate(${iconXFull}, ${yOffset.toFixed(2)}) scale(${heightScale})"${logoFilterAttr}>\n    ${svgContent}\n  </g>\n`;
       }
     } else {
@@ -1878,18 +2043,21 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
       const iconY = Math.round((height - effectiveLogoSize) / 2);
       const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : brandInfo.color);
 
+      svgMarkup += gradStrokeLayer(`  <g transform="translate(${iconX}, ${iconY}) scale(${scaleFactor})" fill="${fillColor}">\n    <path d="${brandInfo.path}"/>\n  </g>\n`);
       svgMarkup += `  <g transform="translate(${iconX}, ${iconY}) scale(${scaleFactor})" fill="${fillColor}"${logoFilterAttr}>\n    <path d="${brandInfo.path}"/>\n  </g>\n`;
     }
   } else if (state.iconMode === 'upload' && state.uploadedDataUrl) {
     const imgSize = effectiveLogoSize;
     const imgY = Math.round((height - imgSize) / 2);
+    svgMarkup += gradStrokeLayer(`  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"/>\n`);
     svgMarkup += `  <image href="${state.uploadedDataUrl}" xlink:href="${state.uploadedDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
   } else if (state.iconMode === 'fontawesome' && !noLogo) {
     const imgSize = effectiveLogoSize;
     const imgY = Math.round((height - imgSize) / 2);
     const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : textColor);
     if (faIcon) {
-      svgMarkup += `  <!-- FontAwesome Icon -->\n  <g${logoFilterAttr}><svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${faIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${faIcon.pathData}"/></svg></g>\n`;
+      const faSvg = `<svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${faIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${faIcon.pathData}"/></svg>`;
+      svgMarkup += `  <!-- FontAwesome Icon -->\n` + gradStrokeLayer(`  ${faSvg}\n`) + `  <g${logoFilterAttr}>${faSvg}</g>\n`;
     } else {
       // No resolved icon (offline or fetch pending) — keep exported files visually complete
       svgMarkup += `  <!-- FontAwesome Placeholder -->\n  <text x="${Math.round(iconX + imgSize / 2)}" y="${Math.round(height / 2)}" fill="#ffffff" font-size="${effectiveLogoSize}" font-family="'Dosis', 'Inter', sans-serif" font-weight="600" text-anchor="middle" dominant-baseline="central" dy="-0.05em"${logoFilterAttr}>?</text>\n`;
@@ -1899,7 +2067,8 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
     const imgY = Math.round((height - imgSize) / 2);
     const fillColor = showDisk ? logoColor : (useCustomLogoColor ? customLogoColor : textColor);
     if (theSvgIcon) {
-      svgMarkup += `  <!-- theSVG Icon -->\n  <g${logoFilterAttr}><svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${theSvgIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg">${theSvgIcon.inner}</svg></g>\n`;
+      const tsSvg = `<svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${theSvgIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg">${theSvgIcon.inner}</svg>`;
+      svgMarkup += `  <!-- theSVG Icon -->\n` + gradStrokeLayer(`  ${tsSvg}\n`) + `  <g${logoFilterAttr}>${tsSvg}</g>\n`;
     } else {
       // No resolved icon (offline or fetch pending) — keep exported files visually complete
       svgMarkup += `  <!-- theSVG Placeholder -->\n  <text x="${Math.round(iconX + imgSize / 2)}" y="${Math.round(height / 2)}" fill="#ffffff" font-size="${effectiveLogoSize}" font-family="'Dosis', 'Inter', sans-serif" font-weight="600" text-anchor="middle" dominant-baseline="central" dy="-0.05em"${logoFilterAttr}>?</text>\n`;
@@ -1907,6 +2076,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
   } else if (state.iconMode === 'raw' && state.rawSvgDataUrl) {
     const imgSize = effectiveLogoSize;
     const imgY = Math.round((height - imgSize) / 2);
+    svgMarkup += gradStrokeLayer(`  <image href="${state.rawSvgDataUrl}" xlink:href="${state.rawSvgDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"/>\n`);
     svgMarkup += `  <image href="${state.rawSvgDataUrl}" xlink:href="${state.rawSvgDataUrl}" x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" preserveAspectRatio="xMidYMid fit"${logoFilterAttr}/>\n`;
   }
   }
@@ -2228,6 +2398,9 @@ function getBadgeConfig() {
     useLogoStroke: document.getElementById('logo-stroke-toggle')?.checked || false,
     logoStrokeColor: document.getElementById('logo-stroke-color')?.value || '#ffffff',
     logoStrokeWidth: parseFloat(document.getElementById('logo-stroke-width')?.value || '2'),
+    useLogoStrokeGrad: document.getElementById('logo-stroke-grad-toggle')?.checked || false,
+    logoStrokeGradTop: document.getElementById('logo-stroke-grad-top')?.value || '#FFFFFF',
+    logoStrokeGradBot: document.getElementById('logo-stroke-grad-bot')?.value || '#61DAFB',
     useLogoShadow: document.getElementById('logo-shadow-toggle')?.checked || false,
     logoShadowColor: document.getElementById('logo-shadow-color')?.value || '#000000',
     logoShadowBlur: parseFloat(document.getElementById('logo-shadow-blur')?.value || '2'),
@@ -2337,6 +2510,9 @@ function applyBadgeConfig(cfg) {
   if (cfg.useLogoStroke !== undefined && document.getElementById('logo-stroke-toggle')) document.getElementById('logo-stroke-toggle').checked = cfg.useLogoStroke;
   if (cfg.logoStrokeColor && document.getElementById('logo-stroke-color')) document.getElementById('logo-stroke-color').value = cfg.logoStrokeColor;
   if (cfg.logoStrokeWidth !== undefined && document.getElementById('logo-stroke-width')) document.getElementById('logo-stroke-width').value = cfg.logoStrokeWidth;
+  if (cfg.useLogoStrokeGrad !== undefined && document.getElementById('logo-stroke-grad-toggle')) document.getElementById('logo-stroke-grad-toggle').checked = cfg.useLogoStrokeGrad;
+  if (cfg.logoStrokeGradTop && document.getElementById('logo-stroke-grad-top')) document.getElementById('logo-stroke-grad-top').value = cfg.logoStrokeGradTop;
+  if (cfg.logoStrokeGradBot && document.getElementById('logo-stroke-grad-bot')) document.getElementById('logo-stroke-grad-bot').value = cfg.logoStrokeGradBot;
 
   if (cfg.useLogoShadow !== undefined && document.getElementById('logo-shadow-toggle')) document.getElementById('logo-shadow-toggle').checked = cfg.useLogoShadow;
   if (cfg.logoShadowColor && document.getElementById('logo-shadow-color')) document.getElementById('logo-shadow-color').value = cfg.logoShadowColor;
