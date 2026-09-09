@@ -1,5 +1,8 @@
-# Throwaway sample output (not a fixture)
-test_vscode.svg
+# Dependencies
+node_modules/
+
+# Test output
+test/out/
 
 # OS junk
 .DS_Store
@@ -12,9 +15,3 @@ Thumbs.db
 
 # Logs & temp
 *.log
-
-# Badges 
-devin_deepseek_4_flash_free_badge.svg
-devin_kiro_badge.svg
-devin_google_antigravity_badge.svg
-devin_opencode_badge.svg

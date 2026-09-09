@@ -1,100 +1,117 @@
-<h1 align="center">Badgeworks</h1>
+# Badgeworks Core (stripped)
 
-<p align="center">
-  <img alt="github" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/github_vector.svg">
-  <img alt="git" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/git_vector.svg">
-  <img alt="generic" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/documentation/generic_vector.svg">
-  <img alt="website" height="56" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/documentation/website_vector.svg">
-  <img height="56" src="devin_google_antigravity_badge.svg" />
-  <img height="56" src="devin_opencode_badge.svg" />
-  <img height="56" src="devin_kiro_badge.svg" />
-</p>
+A headless, dependency-light port of [Badgeworks](https://arthursimin.github.io/Badgeworks) — the devins-badges style badge generator — with **no GUI and no browser**. It renders the exact same badges from a plain JavaScript config object, so you can drop it into a Discord bot (or any Node.js ≥ 18 app) and produce SVG/PNG badges on the fly.
 
+> This is the `stripped` branch. The browser UI lives on `main`; this branch exposes only the rendering engine.
 
-<p align="center">
-  <strong>Create pixel-perfect, customizable badges in the official <code>@intergrav/devins-badges</code> style — right in your browser!</strong>
-</p>
+## Install
 
-<p align="center">
-  <a href="https://arthursimin.github.io/Badgeworks">Try the live website</a>
-</p>
+```bash
+npm install github:ArthurSimin/Badgeworks#stripped
+# or, for local development, point at the folder / a git submodule
+```
 
-<p align="center">
-  <i>This website is entirely made by AI. Please do not start a annoying discussion just because it's made with AI</i>
-</p>
+The only runtime dependency is [`@resvg/resvg-js`](https://github.com/yisibl/resvg-js), used to rasterize SVG → PNG. SVG generation itself is pure JavaScript (no DOM, no canvas).
 
-<p align="center">
-<strong>Note:</strong> If updates don’t appear, perform a hard refresh (Ctrl + F5).
-</p>
+## Quick start
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Badgeworks-Badgeworks-3388ff?style=for-the-badge&logo=github" alt="Badgeworks" />
-</p>
+```js
+import { generateBadge, generateBadgePng } from 'badgeworks-core';
 
-## Features
-* **Export directly to the [`@intensed-dev/devinsbadges-customs`](https://github.com/intensed-dev/devinsbadges-customs) repo!**
+// SVG string
+const svg = await generateBadge({
+  topText: 'Available on',
+  bottomText: 'GitHub',
+  presetKey: 'github'
+});
 
-  * You can directly create an Issue to add your creations to [![ShieldsIO](https://img.shields.io/badge/intensed--devs's-devinsbadges--customs-blue?style=for-the-badge&logo=github)](https://github.com/intensed-dev/devinsbadges-customs) library repo for more, unofficial devinsbadges!
+// PNG Buffer (3x resolution by default) — ready for a Discord attachment
+const png = await generateBadgePng({
+  topText: 'Built with',
+  bottomText: 'Python',
+  presetKey: 'python'
+});
+```
 
+### Sending a badge from a Discord bot
 
-* **4 Official Badge Style Variants**:
+```js
+// discord.js v14
+import { AttachmentBuilder } from 'discord.js';
+import { generateBadgePng } from 'badgeworks-core';
 
-  * Cozy (64px) — Full 2-line title & subtitle
-  * Compact (40px) — Sleek single-line text
-  * Cozy Minimal (56×56) — Icon-only square badge
-  * Compact Minimal (40×40) — Small icon-only square badge
+const png = await generateBadgePng({
+  topText: 'Join our',
+  bottomText: 'Discord',
+  presetKey: 'discord'
+});
 
-* **Pixel-Perfect Vector Geometry**:
+await channel.send({
+  files: [new AttachmentBuilder(png, { name: 'badge.png' })]
+});
+```
 
-  * Exact 40px GitHub Octocat vector path from official `@intergrav/devins-badges` repository
-  * Authentic official brand palettes & vectors for GitHub, Discord, Python (2-color blue & yellow snakes), React, VS Code, Docker, Rust, npm, PyPI, Spotify, YouTube, X / Twitter, Git, and more!
+## API
 
-* **Universal Logo & Image Upload (PNG, JPG, WebP, SVG)**:
+### `generateBadge(config)` → `Promise<string>`
 
-  * Drag-and-drop or file upload support for PNG, JPG, WebP, and SVG logos
-  * Automatic resolution & viewBox auto-scaling (handles 16×16 to 4K / 1024px viewBox SVGs like Godot Engine)
-  * Paste raw `<svg>...</svg>` code directly into the generator
+Resolves an SVG markup string. Preset / upload / raw modes resolve synchronously (wrapped in a promise); FontAwesome and theSVG modes fetch the icon over the network first.
 
-* **Endless FX Customization**:
+### `generateBadgePng(config, options?)` → `Promise<Buffer>`
 
-  * Universal Logo Tinting: Color-tint ANY uploaded logo image, SVG file, or preset
-  * Logo Outline / Stroke: Add a customizable stroke outline around any logo with custom width & color
-  * Text Gradients: Custom Top & Bottom gradient colors for text
-  * Text Outline / Stroke: Crisp text outlines with adjustable stroke width
-  * Optional White Circle Disk: Toggle optional background circle disk behind logos
+Renders the badge and returns PNG bytes. `options`:
+- `scale` — output scale multiplier (default `3`).
+- `resvg` — extra options passed straight to `new Resvg(svg, ...)`, e.g. `resvg: { font: { fontFiles: ['Inter.ttf'] } }` to match the web app's Inter font pixel-for-pixel.
 
-* **Save & Load System**:
+### `svgToPng(svg, options?)` → `Promise<Buffer>`
 
-  * Browser Memory: Quick Save & Load presets directly in your browser (`localStorage`)
-  * Config Export / Import: Export & Import `.json` configuration files to share or backup presets
+Rasterize an arbitrary SVG string to PNG.
 
-* **High-Resolution Exports**:
+### Helpers
 
-  * Export vector SVG (`.svg`) files
-  * Export ultra crisp 3× high-resolution PNG (`.png`) images
+- `normalizeConfig(config)` — returns the fully-resolved config with defaults applied.
+- `resolvePreset('github')` — returns a ready-made config for common badges (`github`, `discord`, `python`, `react`, `vscode`, `pypi`).
+- `listIcons()` — all preset icon keys.
+- `OFFICIAL_BRAND_ICONS` / `BG_GRADIENT_PRESETS` — raw icon + gradient data.
+- `measureText(text, fontSpec, customMeasure?)` — headless text measurement.
 
-## Quick Start
+## Config reference
 
-You can use the live website directly at [arthursimin.github.io/Devin-badge-studio](https://arthursimin.github.io/Devin-badge-studio/), or run it locally:
+| Key | Default | Description |
+| --- | --- | --- |
+| `style` | `'cozy'` | `'cozy'` \| `'compact'` \| `'cozy-minimal'` \| `'compact-minimal'` |
+| `topText` / `bottomText` | `''` | Badge title / subtitle |
+| `iconMode` | `'preset'` | `'preset'` \| `'fontawesome'` \| `'thesvg'` \| `'upload'` \| `'raw'` |
+| `logoPosition` | `'left'` | `'left'` \| `'right'` \| `'none'` |
+| `presetKey` | `'github'` | One of `listIcons()` |
+| `bgStops` | dark gradient | Array of 2–7 hex colors |
+| `radius` / `paddingRight` | `8` / `8` | Corner radius / right padding |
+| `showDisk` | `false` | White circle behind the logo |
+| `diskColor` / `logoColor` / `textColor` / `subtitleColor` | … | Colors |
+| `diskDiameter` / `userLogoScale` | `40` / `34` | Icon sizing |
+| `useTextGrad` + `textGradTop`/`textGradBot` | off | Title/subtitle gradient |
+| `useTextStroke` / `useTextShadow` + related | off | Text effects |
+| `useCustomLogoColor` / `useLogoStroke` / `useLogoStrokeGrad` / `useLogoShadow` + related | off | Logo effects |
+| `faIconClass` or `faPack` + `faIconName` | — | FontAwesome icon (network) |
+| `thesvgSlug` / `thesvgVariant` | — | theSVG icon (network) |
+| `imageDataUrl` / `rawSvgDataUrl` / `customSvgContent` | — | Upload / raw logo sources |
+| `measureText` | — | Optional `(text, fontSpec) => number` override |
 
-1. Clone or download this repository:
+See [`src/index.js`](src/index.js) `DEFAULTS` for the complete list.
 
-   ```bash
-   git clone https://github.com/ArthurSimin/Badgeworks.git
-   ```
+## Icon sources
 
-2. Open [`index.html`](index.html) in any modern web browser. No Node.js or server setup required.
+- **Presets** (`preset`) — pure data (`src/icons.js`), fully offline: `github`, `python`, `vscode`, `discord`, `react`, `docker`, `deno`, `rust`, `git`, `gitlab`, `npm`, `pypi`, `spotify`, `steam`, `youtube`, `twitter`, `star`, `terminal`.
+- **FontAwesome** (`fontawesome`) — fetched from the free CDN; needs network access in the bot.
+- **theSVG** (`thesvg`) — fetched from [thesvg.org](https://thesvg.org); needs network access.
+- **Upload / Raw** (`upload`, `raw`) — pass a data URL or inner SVG markup directly.
 
-## Structure
+## Notes
 
-* `index.html` — Application UI structure
-* `index.css` — Styling and responsive layout
-* `app.js` — Core application logic and rendering engine
+- **Fonts**: the SVG embeds `Inter`. `resvg-js` falls back to a system sans-serif if Inter isn't installed, so PNG text may be off by a pixel or two from the website. For pixel-perfect output register Inter with `generateBadgePng(cfg, { resvg: { font: { fontFiles: ['Inter-Regular.ttf', 'Inter-Bold.ttf'] } } })`.
+- **Text measurement** defaults to a deterministic Inter-calibrated estimate (no canvas). Pass a custom `measureText` for exact metrics.
+- No `localStorage`, no Imgur upload, no Firefox issue flow — those were web-app concerns and are gone.
 
 ## License
 
-This project is licensed under the MIT License.
-
-## Credits
-
-Based on the official [Devin's Badges](https://github.com/intergrav/devins-badges) project by intergrav.
+MIT. Based on [Devin's Badges](https://github.com/intergrav/devins-badges) by intergrav.

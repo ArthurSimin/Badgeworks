@@ -1,0 +1,32 @@
+{
+  "name": "badgeworks-core",
+  "version": "1.0.0",
+  "description": "Headless Badgeworks rendering engine — generate devins-badges style SVG/PNG badges from a config object with no browser or GUI (for Discord bots and other Node apps).",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./icons": "./src/icons.js"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node test/smoke.mjs"
+  },
+  "keywords": [
+    "badge",
+    "discord",
+    "svg",
+    "png",
+    "devins-badges",
+    "headless"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2"
+  }
+}
