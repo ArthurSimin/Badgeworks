@@ -61,7 +61,7 @@ Resolves an SVG markup string. Preset / upload / raw modes resolve synchronously
 
 Renders the badge and returns PNG bytes. `options`:
 - `scale` — output scale multiplier (default `3`).
-- `resvg` — extra options passed straight to `new Resvg(svg, ...)`, e.g. `resvg: { font: { fontFiles: ['Inter.ttf'] } }` to match the web app's Inter font pixel-for-pixel.
+- `resvg` — extra options merged into the `Resvg` constructor call (Inter is already wired up by default; override `resvg.font` only if you need something custom).
 
 ### `svgToPng(svg, options?)` → `Promise<Buffer>`
 
@@ -108,10 +108,10 @@ See [`src/index.js`](src/index.js) `DEFAULTS` for the complete list.
 
 ## Notes
 
-- **Fonts**: the SVG embeds `Inter`. `resvg-js` falls back to a system sans-serif if Inter isn't installed, so PNG text may be off by a pixel or two from the website. For pixel-perfect output register Inter with `generateBadgePng(cfg, { resvg: { font: { fontFiles: ['Inter-Regular.ttf', 'Inter-Bold.ttf'] } } })`.
-- **Text measurement** defaults to a deterministic Inter-calibrated estimate (no canvas). Pass a custom `measureText` for exact metrics.
-- No `localStorage`, no Imgur upload, no Firefox issue flow — those were web-app concerns and are gone.
+- **Fonts**: the library bundles Inter (Regular / Medium / SemiBold / Bold, SIL OFL-1.1 — see [fonts/](fonts/)) and registers it with both the text-measurement canvas and `resvg-js`. PNG text and badge widths therefore match the website (which loads Inter from Google Fonts) 1:1, on any machine, with no system-font setup.
+- **Measurement**: text is measured with a real 2D canvas (`@napi-rs/canvas`) using Inter, identical to the browser's `ctx.measureText()`. If `@napi-rs/canvas` is unavailable it falls back to an Inter-calibrated estimate; pass a custom `config.measureText` for exact metrics in that case.
+- No `localStorage`, no Imgur upload, no GitHub-issue flow — those were web-app concerns and are gone.
 
 ## License
 
-MIT. Based on [Devin's Badges](https://github.com/intergrav/devins-badges) by intergrav.
+MIT. Based on [Devin's Badges](https://github.com/intergrav/devins-badges) by intergrav. The Inter font is © Rasmus Andersson (rsms), licensed under the [SIL Open Font License 1.1](fonts/LICENSE-Inter.txt).

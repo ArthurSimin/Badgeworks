@@ -9,7 +9,8 @@
     "./icons": "./src/icons.js"
   },
   "files": [
-    "src"
+    "src",
+    "fonts"
   ],
   "scripts": {
     "test": "node test/smoke.mjs"
@@ -27,6 +28,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^1.0.9",
     "@resvg/resvg-js": "^2.6.2"
   }
 }

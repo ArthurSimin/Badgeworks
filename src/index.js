@@ -18,11 +18,15 @@
      listIcons()                 -> preset icon keys
    ========================================================================== */
 
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import {
   OFFICIAL_BRAND_ICONS,
   BG_GRADIENT_PRESETS,
   BG_GRADIENT_MAX_STOPS
 } from './icons.js';
+
+const require = createRequire(import.meta.url);
 
 // ---------------------------------------------------------------------------
 // Known FontAwesome pack tokens + class parsing (ports of the app's pure logic)
@@ -223,9 +227,54 @@ export function listIcons() {
 }
 
 // ---------------------------------------------------------------------------
-// Text measurement (headless: pluggable, with an Inter-calibrated estimate)
+// Text measurement (headless: real Inter metrics via canvas, with a heuristic
+// fallback when the canvas backend is unavailable)
 // ---------------------------------------------------------------------------
 const textMeasurementCache = new Map();
+
+// Bundled Inter static weights (SIL OFL-1.1) — the same family the web app
+// loads from Google Fonts, so measured widths match the browser 1:1.
+const INTER_FONT_FILES = [
+  'Inter-Regular.ttf',  // 400
+  'Inter-Medium.ttf',   // 500
+  'Inter-SemiBold.ttf', // 600
+  'Inter-Bold.ttf'      // 700
+];
+
+const FONT_DIR = new URL('../fonts/', import.meta.url);
+
+function interFontPaths() {
+  return INTER_FONT_FILES.map((f) => fileURLToPath(new URL(f, FONT_DIR)));
+}
+
+// Lazily initialised 2D context (skia) used to measure text — mirrors the
+// browser's `ctx.measureText()` call from the original app.
+let _ctx = null;
+let _ctxTried = false;
+
+function getMeasureContext() {
+  if (_ctxTried) return _ctx;
+  _ctxTried = true;
+  try {
+    const { GlobalFonts, createCanvas } = require('@napi-rs/canvas');
+    let registered = false;
+    if (GlobalFonts && typeof GlobalFonts.registerFromPath === 'function') {
+      for (const path of interFontPaths()) {
+        try {
+          if (GlobalFonts.registerFromPath(path, 'Inter')) registered = true;
+        } catch {
+          // keep going — one bad file should not break the rest
+        }
+      }
+    }
+    if (!registered) return (_ctx = null);
+    const canvas = createCanvas(10, 10);
+    _ctx = canvas.getContext('2d');
+  } catch {
+    _ctx = null;
+  }
+  return _ctx;
+}
 
 function estimateTextWidth(text, size, weight) {
   let em = 0;
@@ -251,10 +300,21 @@ export function measureText(text, fontSpec, customMeasure) {
   if (typeof customMeasure === 'function') {
     width = Math.ceil(customMeasure(text, fontSpec) || 0);
   } else {
-    const m = /(\d+)\s+([\d.]+)px/.exec(String(fontSpec));
-    const weight = m ? parseInt(m[1], 10) : 500;
-    const size = m ? parseFloat(m[2]) : 13;
-    width = estimateTextWidth(text, size, weight);
+    const ctx = getMeasureContext();
+    if (ctx) {
+      try {
+        ctx.font = fontSpec;
+        width = Math.ceil(ctx.measureText(text).width);
+      } catch {
+        width = 0;
+      }
+    }
+    if (!width) {
+      const m = /(\d+)\s+([\d.]+)px/.exec(String(fontSpec));
+      const weight = m ? parseInt(m[1], 10) : 500;
+      const size = m ? parseFloat(m[2]) : 13;
+      width = estimateTextWidth(text, size, weight);
+    }
   }
 
   if (textMeasurementCache.size > 2000) textMeasurementCache.clear();
@@ -800,7 +860,23 @@ export async function svgToPng(svg, opts) {
       'PNG export requires the "@resvg/resvg-js" package. Install it, or use generateBadge() for SVG output.'
     );
   }
-  const resvgOpts = Object.assign({ fitTo: { mode: 'zoom', value: scale } }, options.resvg || {});
+  const resvgOpts = Object.assign(
+    {
+      fitTo: { mode: 'zoom', value: scale },
+      font: { fontFiles: interFontPaths(), loadSystemFonts: false, defaultFontFamily: 'Inter' }
+    },
+    options.resvg || {}
+  );
+  // Merge any caller-supplied font options without silently dropping ours.
+  if (options.resvg && options.resvg.font && Array.isArray(options.resvg.font.fontFiles)) {
+    resvgOpts.font = {
+      ...resvgOpts.font,
+      ...options.resvg.font,
+      fontFiles: options.resvg.font.fontFiles.length
+        ? options.resvg.font.fontFiles
+        : resvgOpts.font.fontFiles
+    };
+  }
   const resvg = new resvgMod.Resvg(svg, resvgOpts);
   return resvg.render().asPng();
 }

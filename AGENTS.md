@@ -34,11 +34,12 @@ the extractor (top-level `const OFFICIAL_BRAND_ICONS = {…};` and
 - **IDs must be unique per badge**: the renderer suffixes filter/gradient ids
   with a per-call counter (`badge-b1-bg`, etc.) so multiple badges can be
   embedded in one SVG/HTML document without colliding.
-- **Measurement is headless**: `measureText` uses an Inter-calibrated estimate;
-  pass `config.measureText` for exact metrics. PNG width and SVG width use the
-  same estimate, so they stay consistent.
-- **PNG needs `@resvg/resvg-js`**. SVG generation works with zero dependencies.
-  `resvg-js` supports the common filter primitives used here, but its text
-  rendering falls back to a system sans unless Inter is registered.
+- **Measurement is pixel-parity with the browser**: text is measured with a real
+  2D canvas (`@napi-rs/canvas`) using the bundled Inter TTFs (`fonts/`), the
+  same as the app's `ctx.measureText()` on Inter. A heuristic fallback runs if
+  the canvas backend is unavailable. Pass `config.measureText` to override.
+- **PNG needs `@resvg/resvg-js`**, which is wired to the same bundled Inter
+  fonts (`fontFiles` + `defaultFontFamily: 'Inter'`) so PNG text matches SVG.
+  SVG generation works without a native canvas (heuristic fallback).
 - FontAwesome (`fa-…`) and theSVG (`thesvgSlug`) modes require network access
   (`fetch`). Presets are fully offline.
