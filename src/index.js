@@ -396,6 +396,17 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// Dosis SemiBold's question-mark glyph, converted to a path so headless PNG
+// rendering does not silently substitute Inter when Dosis is unavailable.
+// The browser app renders this glyph from Dosis 600 for failed remote icons.
+function buildQuestionMarkIcon(cx, cy, size, filterAttr = '') {
+  const scale = size / 1000;
+  const x = cx - 212 * scale;
+  const y = cy + 366 * scale;
+  const path = 'M185 188Q164 188 155 197.5Q146 207 146 234Q146 284 153.5 315.5Q161 347 174 366Q187 385 200 398Q214 412 232 427Q250 442 267 460Q284 478 295.5 501.5Q307 525 307 556Q307 604 276 630.5Q245 657 191 657Q156 657 136.5 648Q117 639 106 626.5Q95 614 86 604.5Q77 595 63 595Q50 595 36 605.5Q22 616 22 636Q22 657 42.5 681Q63 705 102 721.5Q141 738 195 738Q258 738 302.5 715.5Q347 693 371 654Q395 615 395 566Q395 524 380 491.5Q365 459 344.5 433.5Q324 408 303.5 390Q283 372 270 359Q249 340 240 319.5Q231 299 229 275Q227 251 227 219Q227 207 218 197.5Q209 188 185 188ZM186 -6Q160 -6 143 12Q126 30 126 54Q126 79 143.5 96.5Q161 114 186 114Q210 114 227.5 96.5Q245 79 245 54Q245 30 228 12Q211 -6 186 -6Z';
+  return `  <path d="${path}" fill="#ffffff" transform="translate(${x.toFixed(3)} ${y.toFixed(3)}) scale(${scale.toFixed(6)} ${(-scale).toFixed(6)})"${filterAttr}/>`;
+}
+
 // ---------------------------------------------------------------------------
 // Icon source fetch (Node fetch) — FontAwesome + theSVG
 // ---------------------------------------------------------------------------
@@ -747,7 +758,12 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
       const faSvg = `<svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${faIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg"><path d="${faIcon.pathData}"/></svg>`;
       svgMarkup += gradStrokeLayer(`  ${faSvg}\n`) + `  <g${logoFilterAttr}>${faSvg}</g>\n`;
     } else {
-      svgMarkup += `  <text x="${Math.round(iconX + imgSize / 2)}" y="${Math.round(height / 2)}" fill="#ffffff" font-size="${effectiveLogoSize}" font-family="'Dosis', 'Inter', sans-serif" font-weight="600" text-anchor="middle" dominant-baseline="central" dy="-0.05em"${logoFilterAttr}>?</text>\n`;
+      svgMarkup += buildQuestionMarkIcon(
+        Math.round(iconX + imgSize / 2),
+        Math.round(height / 2) - effectiveLogoSize * 0.05,
+        effectiveLogoSize,
+        logoFilterAttr
+      ) + '\n';
     }
   } else if (c.iconMode === 'thesvg' && !noLogo) {
     const imgSize = effectiveLogoSize;
@@ -757,7 +773,12 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
       const tsSvg = `<svg x="${iconX}" y="${imgY}" width="${imgSize}" height="${imgSize}" viewBox="${theSvgIcon.viewBox}" fill="${fillColor}" xmlns="http://www.w3.org/2000/svg">${theSvgIcon.inner}</svg>`;
       svgMarkup += gradStrokeLayer(`  ${tsSvg}\n`) + `  <g${logoFilterAttr}>${tsSvg}</g>\n`;
     } else {
-      svgMarkup += `  <text x="${Math.round(iconX + imgSize / 2)}" y="${Math.round(height / 2)}" fill="#ffffff" font-size="${effectiveLogoSize}" font-family="'Dosis', 'Inter', sans-serif" font-weight="600" text-anchor="middle" dominant-baseline="central" dy="-0.05em"${logoFilterAttr}>?</text>\n`;
+      svgMarkup += buildQuestionMarkIcon(
+        Math.round(iconX + imgSize / 2),
+        Math.round(height / 2) - effectiveLogoSize * 0.05,
+        effectiveLogoSize,
+        logoFilterAttr
+      ) + '\n';
     }
   } else if (c.iconMode === 'raw' && c.rawSvgDataUrl) {
     const imgSize = effectiveLogoSize;
