@@ -75,7 +75,7 @@
 
 ## Quick Start
 
-You can use the live website directly at [arthursimin.github.io/Devin-badge-studio](https://arthursimin.github.io/Devin-badge-studio/), or run it locally:
+You can use the live website [here!](https://arthursimin.github.io/Badgeworks/), or run it locally:
 
 1. Clone or download this repository:
 
