@@ -5,9 +5,9 @@
 // Application State
 const state = {
   style: 'cozy', // 'cozy' | 'compact' | 'cozy-minimal' | 'compact-minimal'
-  topText: 'Available on',
-  bottomText: 'GitHub',
-  iconMode: 'preset', // 'preset' | 'fontawesome' | 'thesvg' | 'upload' | 'raw'
+  topText: 'Create on',
+  bottomText: 'Badgeworks',
+  iconMode: 'fontawesome', // 'preset' | 'fontawesome' | 'thesvg' | 'upload' | 'raw'
   logoPosition: 'left', // 'left' | 'right' | 'none'
   presetKey: 'github',
   uploadedDataUrl: '', // base64 DataURL for PNG/JPG/SVG
@@ -18,7 +18,7 @@ const state = {
   showDisk: false, // Default to FALSE for pure standalone logos!
   diskColor: '#ffffff',
   logoColor: '#ffffff',
-  bgStops: ['#181f29', '#0f131a'], // background gradient stops (2–7)
+  bgStops: ['#0d6ffb', '#0157ff'], // background gradient stops (2–7)
   bgGradPreset: 'custom', // name of the currently-applied gradient preset ('custom' = manual)
   textColor: '#ffffff',
   radius: 8,
@@ -779,15 +779,37 @@ function applyPreset(type) {
     python: { top: 'Built with', bottom: 'Python', icon: 'python' },
     react: { top: 'Powered by', bottom: 'React', icon: 'react' },
     vscode: { top: 'Get for', bottom: 'VS Code', icon: 'vscode' },
-    pypi: { top: 'Package on', bottom: 'PyPI', icon: 'pypi' }
+    pypi: { top: 'Package on', bottom: 'PyPI', icon: 'pypi' },
+    badgeworks: { top: 'Create on', bottom: 'Badgeworks', faIconClass: 'fa-solid fa-b', bgTop: '#0d6ffb', bgBot: '#0157ff', userLogoScale: 41 }
   };
 
   const p = presets[type];
   if (!p) return;
 
-  const brandInfo = OFFICIAL_BRAND_ICONS[p.icon];
   document.getElementById('top-text').value = p.top;
   document.getElementById('bottom-text').value = p.bottom;
+
+  if (p.faIconClass) {
+    // FontAwesome-based preset (e.g. the Badgeworks "b" mark)
+    parseFontAwesomeInput(p.faIconClass);
+    state.bgStops = [p.bgTop || '#181f29', p.bgBot || '#0f131a'];
+    setBgGradPresetSelect('custom');
+    renderBgStopEditor();
+    if (p.userLogoScale != null) {
+      const slider = document.getElementById('icon-scale-slider');
+      if (slider) slider.value = String(p.userLogoScale);
+      const label = document.getElementById('icon-scale-num');
+      if (label) label.innerText = `${p.userLogoScale}px`;
+    }
+    state.iconMode = 'fontawesome';
+    setIconMode('fontawesome');
+    // A preset implies a visible logo — if the user was in "No Logo" mode, go back to Logo Left
+    if (state.logoPosition === 'none') setLogoPosition('left');
+    renderBadge();
+    return;
+  }
+
+  const brandInfo = OFFICIAL_BRAND_ICONS[p.icon];
   document.getElementById('preset-select').value = p.icon;
   applyIconScaleDefault(p.icon);
   if (brandInfo) {

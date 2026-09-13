@@ -70,6 +70,7 @@
         <button class="preset-pill" onclick="applyPreset('react')">React</button>
         <button class="preset-pill" onclick="applyPreset('vscode')">VS Code</button>
         <button class="preset-pill" onclick="applyPreset('pypi')">PyPI</button>
+        <button class="preset-pill" onclick="applyPreset('badgeworks')">Badgeworks</button>
       </div>
     </div>
   </header>
@@ -126,11 +127,11 @@
           <div class="grid-2col">
             <div class="field-group">
               <label for="top-text">Subtitle (Top Text)</label>
-              <input type="text" id="top-text" class="input-text" value="Available on" oninput="renderBadge()">
+              <input type="text" id="top-text" class="input-text" value="Create on" oninput="renderBadge()">
             </div>
             <div class="field-group">
               <label for="bottom-text">Main Title (Bottom Text)</label>
-              <input type="text" id="bottom-text" class="input-text" value="GitHub" oninput="renderBadge()">
+              <input type="text" id="bottom-text" class="input-text" value="Badgeworks" oninput="renderBadge()">
             </div>
           </div>
 
@@ -213,15 +214,15 @@
 
           <!-- Icon Source Segmented Tabs -->
           <div class="segmented-control">
-            <button class="seg-btn active" id="seg-preset" onclick="setIconMode('preset')">Preset Icons</button>
-            <button class="seg-btn" id="seg-fontawesome" onclick="setIconMode('fontawesome')">FontAwesome</button>
+            <button class="seg-btn" id="seg-preset" onclick="setIconMode('preset')">Preset Icons</button>
+            <button class="seg-btn active" id="seg-fontawesome" onclick="setIconMode('fontawesome')">FontAwesome</button>
             <button class="seg-btn" id="seg-thesvg" onclick="setIconMode('thesvg')">theSVG</button>
             <button class="seg-btn" id="seg-upload" onclick="setIconMode('upload')">Upload Image / SVG</button>
             <button class="seg-btn" id="seg-raw" onclick="setIconMode('raw')">Paste SVG Code</button>
           </div>
 
           <!-- Mode 1: Preset Icons -->
-          <div id="icon-mode-preset" class="mode-container">
+          <div id="icon-mode-preset" class="mode-container" style="display: none;">
             <select id="preset-select" class="input-text" onchange="onPresetSelect()">
               <option value="github">GitHub Octocat</option>
               <option value="discord">Discord</option>
@@ -245,25 +246,25 @@
           </div>
 
           <!-- Mode 1.5: FontAwesome Icons -->
-          <div id="icon-mode-fontawesome" class="mode-container" style="display: none;">
+          <div id="icon-mode-fontawesome" class="mode-container">
             <div class="field-group">
               <label for="fa-icon-name">FontAwesome Icon</label>
               <div class="fa-input-row">
                 <select id="fa-pack-select" class="input-text fa-pack-select" onchange="updateFontAwesomePreview(); renderBadge();">
                   <option value="fa-brands">fa-brands</option>
-                  <option value="fa-solid">fa-solid</option>
+                  <option value="fa-solid" selected>fa-solid</option>
                   <option value="fa-regular">fa-regular</option>
                 </select>
                 <div class="fa-name-wrap">
                   <span class="fa-prefix">fa-</span>
-                  <input type="text" id="fa-icon-name" class="input-text" list="fa-icon-list" placeholder="github" value="github" oninput="onFaSlugInput()">
+                  <input type="text" id="fa-icon-name" class="input-text" list="fa-icon-list" placeholder="github" value="b" oninput="onFaSlugInput()">
                 </div>
               </div>
               <datalist id="fa-icon-list"></datalist>
               <span style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.25rem;">Browse icons at <a href="https://fontawesome.com/icons" target="_blank" style="color: var(--accent);">fontawesome.com/icons</a></span>
             </div>
             <div class="fa-preview" id="fa-preview" style="margin-top: 0.75rem; padding: 1rem; background: var(--bg-input); border-radius: var(--radius-sm); text-align: center;">
-              <i class="fa-brands fa-github" style="font-size: 48px; color: var(--text-primary);"></i>
+              <i class="fa-solid fa-b" style="font-size: 48px; color: var(--text-primary);"></i>
               <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">Icon Preview</p>
             </div>
           </div>
