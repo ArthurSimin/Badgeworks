@@ -18,13 +18,13 @@ function assert(cond, msg) {
 async function main() {
   assert(listIcons().includes('github'), 'listIcons contains github');
 
-  // 1. Default preset badge (github) -> SVG
-  const svg = await generateBadge({ topText: 'Available on', bottomText: 'GitHub' });
+  // 1. Default badge ("Create on / Badgeworks", FontAwesome "b") -> SVG
+  const svg = await generateBadge();
   assert(svg.startsWith('<svg'), 'SVG starts with <svg');
   assert(svg.includes('width="'), 'SVG has width');
   assert(svg.includes('</svg>'), 'SVG closes');
-  writeFileSync(join(outDir, 'github_cozy.svg'), svg);
-  console.log('✓ github cozy SVG', svg.match(/width="(\d+)"/)[0]);
+  writeFileSync(join(outDir, 'default_badgeworks.svg'), svg);
+  console.log('✓ default (Badgeworks) SVG', svg.match(/width="(\d+)"/)[0]);
 
   // 2. Every preset + every style should render without throwing
   for (const key of listIcons()) {

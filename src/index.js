@@ -75,9 +75,9 @@ export function normalizeTheSvgSlug(raw) {
 // ---------------------------------------------------------------------------
 const DEFAULTS = {
   style: 'cozy', // 'cozy' | 'compact' | 'cozy-minimal' | 'compact-minimal'
-  topText: '',
-  bottomText: '',
-  iconMode: 'preset', // 'preset' | 'fontawesome' | 'thesvg' | 'upload' | 'raw' | (none handled via logoPosition)
+  topText: 'Create on',
+  bottomText: 'Badgeworks',
+  iconMode: 'fontawesome', // 'preset' | 'fontawesome' | 'thesvg' | 'upload' | 'raw' | (none handled via logoPosition)
   logoPosition: 'left', // 'left' | 'right' | 'none'
   presetKey: 'github',
 
@@ -88,7 +88,7 @@ const DEFAULTS = {
   isUploadedSvg: false,
 
   // background
-  bgStops: ['#181f29', '#0f131a'],
+  bgStops: ['#0d6ffb', '#0157ff'],
 
   // layout / styling
   showDisk: false,
@@ -99,7 +99,7 @@ const DEFAULTS = {
   radius: 8,
   paddingRight: 8,
   diskDiameter: 40,
-  userLogoScale: 34,
+  userLogoScale: 41,
 
   // text FX
   useTextGrad: false,
@@ -125,9 +125,9 @@ const DEFAULTS = {
   logoShadowBlur: 2,
 
   // FontAwesome
-  faIconClass: 'fa-brands fa-github', // or provide faPack + faIconName
-  faPack: 'fa-brands',
-  faIconName: 'github',
+  faIconClass: 'fa-solid fa-b', // or provide faPack + faIconName
+  faPack: 'fa-solid',
+  faIconName: 'b',
 
   // theSVG
   thesvgSlug: 'github',
@@ -136,6 +136,13 @@ const DEFAULTS = {
 
 export function normalizeConfig(cfg) {
   const c = Object.assign({}, DEFAULTS, cfg || {});
+
+  // If a caller supplied a preset key but not an icon mode, select preset mode.
+  // The library default iconMode is now `fontawesome` (the Badgeworks brand
+  // badge), so an explicit preset key must still resolve to its preset icon.
+  if (cfg && cfg.presetKey && cfg.iconMode == null) {
+    c.iconMode = 'preset';
+  }
 
   // style must be one of the 4 supported variants
   if (!['cozy', 'compact', 'cozy-minimal', 'compact-minimal'].includes(c.style)) c.style = 'cozy';
@@ -203,12 +210,28 @@ export const PRESETS = {
   python: { top: 'Built with', bottom: 'Python', icon: 'python' },
   react: { top: 'Powered by', bottom: 'React', icon: 'react' },
   vscode: { top: 'Get for', bottom: 'VS Code', icon: 'vscode' },
-  pypi: { top: 'Package on', bottom: 'PyPI', icon: 'pypi' }
+  pypi: { top: 'Package on', bottom: 'PyPI', icon: 'pypi' },
+  badgeworks: { top: 'Create on', bottom: 'Badgeworks', faIconClass: 'fa-solid fa-b', bgTop: '#0d6ffb', bgBot: '#0157ff', userLogoScale: 41 }
 };
 
 export function resolvePreset(type, overrides) {
   const p = PRESETS[type];
   if (!p) return null;
+
+  // FontAwesome-based preset (e.g. the Badgeworks "b" mark)
+  if (p.faIconClass) {
+    const cfg = {
+      topText: p.top,
+      bottomText: p.bottom,
+      iconMode: 'fontawesome',
+      logoPosition: 'left',
+      faIconClass: p.faIconClass,
+      bgStops: [p.bgTop || '#0d6ffb', p.bgBot || '#0157ff'],
+      userLogoScale: p.userLogoScale != null ? p.userLogoScale : 41
+    };
+    return Object.assign(cfg, overrides || {});
+  }
+
   const brand = OFFICIAL_BRAND_ICONS[p.icon] || {};
   const cfg = {
     topText: p.top,
@@ -829,6 +852,64 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
 // Public API
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Uploaded-image normalization
+// ---------------------------------------------------------------------------
+
+// Sniff the real image format from magic bytes so a wrong MIME label (e.g.
+// Discord reporting "image/png" for a WebP) can't slip a broken image into the
+// badge. resvg (the PNG rasterizer) only decodes PNG/JPEG/GIF; WebP/AVIF/other
+// bytes are silently dropped, which leaves a blank logo.
+function sniffImageFormat(buf) {
+  if (!buf || buf.length < 4) return 'unknown';
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return 'png';
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'jpeg';
+  const head = buf.slice(0, 6).toString('ascii');
+  if (head === 'GIF87a' || head === 'GIF89a') return 'gif';
+  if (buf.length >= 12 && buf.slice(0, 4).toString('ascii') === 'RIFF' && buf.slice(8, 12).toString('ascii') === 'WEBP') return 'webp';
+  return 'unknown';
+}
+
+// Re-encode an uploaded raster image to PNG (and correct its MIME) when the
+// bytes aren't PNG/JPEG, so both SVG and PNG output embed a decodable image.
+// SVG/utf8 data URLs pass through untouched; graceful no-op if the canvas
+// backend (or image format) isn't available.
+async function normalizeImageDataUrl(dataUrl) {
+  if (typeof dataUrl !== 'string' || !dataUrl) return dataUrl;
+  const m = /^data:([^;,]+);base64,(.+)$/s.exec(dataUrl);
+  if (!m) return dataUrl; // non-base64 (e.g. pasted utf8 SVG) — leave untouched
+
+  let raw;
+  try {
+    raw = Buffer.from(m[2], 'base64');
+  } catch {
+    return dataUrl;
+  }
+
+  const kind = sniffImageFormat(raw);
+  if (kind === 'png') {
+    return /^image\/png$/i.test(m[1]) ? dataUrl : `data:image/png;base64,${m[2]}`;
+  }
+  if (kind === 'jpeg') {
+    return `data:image/jpeg;base64,${m[2]}`;
+  }
+
+  const asText = raw.slice(0, 256).toString('utf8').trimStart();
+  if (asText.startsWith('<') || asText.startsWith('<?xml')) return dataUrl;
+
+  try {
+    const { loadImage, createCanvas } = require('@napi-rs/canvas');
+    const img = await loadImage(raw);
+    const canvas = createCanvas(img.width, img.height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const png = canvas.toBuffer('image/png');
+    return 'data:image/png;base64,' + png.toString('base64');
+  } catch {
+    return dataUrl;
+  }
+}
+
 /**
  * Build a badge SVG string. Resolves FontAwesome / theSVG icons over the
  * network when those modes are used; presets / upload / raw are synchronous.
@@ -837,6 +918,10 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
  */
 export async function generateBadge(cfg) {
   const c = normalizeConfig(cfg);
+
+  if (c.iconMode === 'upload' && c.imageDataUrl) {
+    c.imageDataUrl = await normalizeImageDataUrl(c.imageDataUrl);
+  }
 
   let faIcon = null;
   let theSvgIcon = null;

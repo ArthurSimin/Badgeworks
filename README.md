@@ -18,6 +18,9 @@ The only runtime dependency is [`@resvg/resvg-js`](https://github.com/yisibl/res
 ```js
 import { generateBadge, generateBadgePng } from 'badgeworks-core';
 
+// Default badge ("Create on / Badgeworks" with the FontAwesome "b" mark)
+const defaultBadge = await generateBadge();
+
 // SVG string
 const svg = await generateBadge({
   topText: 'Available on',
@@ -70,7 +73,7 @@ Rasterize an arbitrary SVG string to PNG.
 ### Helpers
 
 - `normalizeConfig(config)` — returns the fully-resolved config with defaults applied.
-- `resolvePreset('github')` — returns a ready-made config for common badges (`github`, `discord`, `python`, `react`, `vscode`, `pypi`).
+- `resolvePreset('github')` — returns a ready-made config for common badges (`github`, `discord`, `python`, `react`, `vscode`, `pypi`, `badgeworks`).
 - `listIcons()` — all preset icon keys.
 - `OFFICIAL_BRAND_ICONS` / `BG_GRADIENT_PRESETS` — raw icon + gradient data.
 - `measureText(text, fontSpec, customMeasure?)` — headless text measurement.
@@ -80,19 +83,19 @@ Rasterize an arbitrary SVG string to PNG.
 | Key | Default | Description |
 | --- | --- | --- |
 | `style` | `'cozy'` | `'cozy'` \| `'compact'` \| `'cozy-minimal'` \| `'compact-minimal'` |
-| `topText` / `bottomText` | `''` | Badge title / subtitle |
-| `iconMode` | `'preset'` | `'preset'` \| `'fontawesome'` \| `'thesvg'` \| `'upload'` \| `'raw'` |
+| `topText` / `bottomText` | `'Create on'` / `'Badgeworks'` | Badge title / subtitle |
+| `iconMode` | `'fontawesome'` | `'preset'` \| `'fontawesome'` \| `'thesvg'` \| `'upload'` \| `'raw'` |
 | `logoPosition` | `'left'` | `'left'` \| `'right'` \| `'none'` |
-| `presetKey` | `'github'` | One of `listIcons()` |
-| `bgStops` | dark gradient | Array of 2–7 hex colors |
+| `presetKey` | `'github'` | One of `listIcons()` (used in `preset` mode) |
+| `bgStops` | `['#0d6ffb', '#0157ff']` | Array of 2–7 hex colors |
 | `radius` / `paddingRight` | `8` / `8` | Corner radius / right padding |
 | `showDisk` | `false` | White circle behind the logo |
 | `diskColor` / `logoColor` / `textColor` / `subtitleColor` | … | Colors |
-| `diskDiameter` / `userLogoScale` | `40` / `34` | Icon sizing |
+| `diskDiameter` / `userLogoScale` | `40` / `41` | Icon sizing |
 | `useTextGrad` + `textGradTop`/`textGradBot` | off | Title/subtitle gradient |
 | `useTextStroke` / `useTextShadow` + related | off | Text effects |
 | `useCustomLogoColor` / `useLogoStroke` / `useLogoStrokeGrad` / `useLogoShadow` + related | off | Logo effects |
-| `faIconClass` or `faPack` + `faIconName` | — | FontAwesome icon (network) |
+| `faIconClass` or `faPack` + `faIconName` | `'fa-solid fa-b'` | FontAwesome icon (network) |
 | `thesvgSlug` / `thesvgVariant` | — | theSVG icon (network) |
 | `imageDataUrl` / `rawSvgDataUrl` / `customSvgContent` | — | Upload / raw logo sources |
 | `measureText` | — | Optional `(text, fontSpec) => number` override |
