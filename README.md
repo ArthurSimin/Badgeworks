@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <i>This website is entirely made by AI. Please do not start a annoying discussion just because it's made with AI</i>
+  <i>This website is entirely made by AI. Please do not start a annoying discussion just because it's made with AI.</i>
 </p>
 
 <p align="center">
