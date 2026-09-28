@@ -2338,18 +2338,24 @@ ${exampleLines}
 ---
 **This issue is made automatically by Badgeworks, so unfortunately no labels and wrong Issue Template :[**`;
 
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(body)
-          .then(() => showToast('Done! Body copied — paste it into the issue form.'))
-          .catch(() => showToast('Uploaded! But clipboard failed — copy the body manually.'));
-      } else {
-        showToast('Uploaded! Clipboard unavailable — copy the body manually.');
-      }
+      // GitHub Issue Forms support URL prefills using the field IDs from
+      // .github/ISSUE_TEMPLATE/new_badge.yml. Open the actual form instead
+      // of creating a generic issue and copying the generated body manually.
+      const title = encodeURIComponent(`[NEW] ${bottomText || badgePurpose}`);
+      const badgeName = encodeURIComponent(bottomText || 'Badge');
+      const description = encodeURIComponent(badgePurpose);
+      const images = encodeURIComponent(exampleLines);
 
-      const title = encodeURIComponent(`${bottomText || badgePurpose} [NEW]`);
-      const url = `https://github.com/intensed-dev/devinsbadges-customs/issues/new?template=new-badge.md&title=${title}`;
+      const url =
+        `https://github.com/intensed-dev/devinsbadges-customs/issues/new` +
+        `?template=new_badge.yml` +
+        `&title=${title}` +
+        `&badge_name=${badgeName}` +
+        `&description=${description}` +
+        `&images=${images}`;
+
       const opened = window.open(url, '_blank');
-      if (!opened) showToast('Popup blocked — allow popups to open the issue page.');
+      if (!opened) showToast('Popup blocked — allow popups to open the issue form.');
     }).catch(() => showToast('Failed to build badge previews — please try again.'));
   }).catch(() => showToast('Failed to build badge previews — please try again.'));
 }
