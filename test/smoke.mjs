@@ -85,3 +85,22 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
+{
+  const { readFile } = await import('node:fs/promises');
+  const { generateBadge, generateBadgePng, normalizeConfig } = await import('../src/index.js');
+  for (const [style, height] of [['cozy',56], ['compact',40], ['cozy-minimal',56], ['compact-minimal',40]]) {
+    const svg = await generateBadge({ style, presetKey: 'youtube', topText: 'Watch us on', bottomText: 'YouTube' });
+    assert(svg.match(/^<svg[^>]* height="(\d+)"/)[1] === String(height), `${style} has the upstream height`);
+    assert(svg.includes('f22f21'), `${style} uses the upstream YouTube logo`);
+    const png = await generateBadgePng({ style, presetKey: 'youtube' });
+    assert(png.readUInt32BE(20) === height * 3, `${style} PNG has the correct height`);
+    const original = await readFile(new URL(`../assets/devins-badges/${style}/social/youtube-plural_vector.svg`, import.meta.url), 'utf8');
+    assert(await generateBadge({ style, officialBadge: 'social/youtube-plural' }) === original, `${style} original SVG is unchanged`);
+    if (style === 'compact') assert(svg.includes('>Watch us on</text>') && svg.includes('>YouTube</text>'), 'Compact includes both labels');
+  }
+  const svg = await generateBadge({ useTextGrad: true, useSubtitleGrad: true, titleGradientPreset: 'rainbow',
+    textGradients: { subtitle: { angle: 90, stops: [{ color: '#123456', offset: 0 }, { color: '#abcdef', offset: 100 }] } } });
+  assert(svg.includes('#8b00ff') && svg.includes('#abcdef'), 'Independent gradients and Rainbow preset render');
+  assert(normalizeConfig({ faPack: 'fa-brands', faIconName: 'github' }).faIconName === 'github', 'Explicit icon name wins over the default');
+  console.log('Upstream geometry, exact presets, gradients, and icon config passed.');
+}

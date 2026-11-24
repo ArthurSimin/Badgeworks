@@ -11,7 +11,7 @@ npm install github:ArthurSimin/Badgeworks#stripped
 # or, for local development, point at the folder / a git submodule
 ```
 
-The only runtime dependency is [`@resvg/resvg-js`](https://github.com/yisibl/resvg-js), used to rasterize SVG → PNG. SVG generation itself is pure JavaScript (no DOM, no canvas).
+The core uses `@napi-rs/canvas` for text measurement and `@resvg/resvg-js` for PNG rendering. It runs without a browser or DOM.
 
 ## Quick start
 
@@ -83,16 +83,19 @@ Rasterize an arbitrary SVG string to PNG.
 | Key | Default | Description |
 | --- | --- | --- |
 | `style` | `'cozy'` | `'cozy'` \| `'compact'` \| `'cozy-minimal'` \| `'compact-minimal'` |
-| `topText` / `bottomText` | `'Create on'` / `'Badgeworks'` | Badge title / subtitle |
+| `topText` / `bottomText` | `'Create on'` / `'Badgeworks'` | Badge subtitle / title |
 | `iconMode` | `'fontawesome'` | `'preset'` \| `'fontawesome'` \| `'thesvg'` \| `'upload'` \| `'raw'` |
 | `logoPosition` | `'left'` | `'left'` \| `'right'` \| `'none'` |
 | `presetKey` | `'github'` | One of `listIcons()` (used in `preset` mode) |
 | `bgStops` | `['#0d6ffb', '#0157ff']` | Array of 2–7 hex colors |
-| `radius` / `paddingRight` | `8` / `8` | Corner radius / right padding |
+| `radius` / `paddingRight` | `8` / `12` | Corner radius / right padding |
 | `showDisk` | `false` | White circle behind the logo |
 | `diskColor` / `logoColor` / `textColor` / `subtitleColor` | … | Colors |
-| `diskDiameter` / `userLogoScale` | `40` / `41` | Icon sizing |
-| `useTextGrad` + `textGradTop`/`textGradBot` | off | Title/subtitle gradient |
+| `diskDiameter` / `userLogoScale` | `40` / `40` | Icon sizing |
+| `useTextGrad` / `useSubtitleGrad` | off | Independent title and subtitle gradients |
+| `textGradients` | — | Browser-compatible `{ title, subtitle }` gradients. Each has an `angle` in degrees and `stops: [{ color, offset }]` with offsets from 0 to 100. |
+| `titleGradientPreset` / `subtitleGradientPreset` | — | Named palettes such as `rainbow`, used when explicit stops are absent |
+| `officialBadge` | — | Catalog ID such as `social/youtube-plural`. Returns the original SVG for the selected style. |
 | `useTextStroke` / `useTextShadow` + related | off | Text effects |
 | `useCustomLogoColor` / `useLogoStroke` / `useLogoStrokeGrad` / `useLogoShadow` + related | off | Logo effects |
 | `faIconClass` or `faPack` + `faIconName` | `'fa-solid fa-b'` | FontAwesome icon (network) |
@@ -118,3 +121,4 @@ See [`src/index.js`](src/index.js) `DEFAULTS` for the complete list.
 ## License
 
 MIT. Based on [Devin's Badges](https://github.com/intergrav/devins-badges) by intergrav. The Inter font is © Rasmus Andersson (rsms), licensed under the [SIL Open Font License 1.1](fonts/LICENSE-Inter.txt).
+Cozy is 56 px high with a 40 px logo frame. Compact is 40 px high with a 28 px logo frame and both labels on one line. Minimal styles are square. The package bundles all 740 official SVGs and their isolated logo artwork. Legacy two-color title gradients still load.
