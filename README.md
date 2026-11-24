@@ -12,7 +12,7 @@
 
 
 <p align="center">
-  <strong>Create pixel-perfect, customizable badges in the official <code>@intergrav/devins-badges</code> style — right in your browser!</strong>
+  <strong>Browse the original Devin’s Badges catalog and build custom badges in your browser.</strong>
 </p>
 
 <p align="center">
@@ -32,46 +32,13 @@
 </p>
 
 ## Features
-* **Export directly to the [`@intensed-dev/devinsbadges-customs`](https://github.com/intensed-dev/devinsbadges-customs) repo!**
 
-  * You can directly create an Issue to add your creations to [![ShieldsIO](https://img.shields.io/badge/intensed--devs's-devinsbadges--customs-blue?style=for-the-badge&logo=github)](https://github.com/intensed-dev/devinsbadges-customs) library repo for more, unofficial devinsbadges!
-
-
-* **4 Official Badge Style Variants**:
-
-  * Cozy (64px) — Full 2-line title & subtitle
-  * Compact (40px) — Sleek single-line text
-  * Cozy Minimal (56×56) — Icon-only square badge
-  * Compact Minimal (40×40) — Small icon-only square badge
-
-* **Pixel-Perfect Vector Geometry**:
-
-  * Exact 40px GitHub Octocat vector path from official `@intergrav/devins-badges` repository
-  * Authentic official brand palettes & vectors for GitHub, Discord, Python (2-color blue & yellow snakes), React, VS Code, Docker, Rust, npm, PyPI, Spotify, YouTube, X / Twitter, Git, and more!
-
-* **Universal Logo & Image Upload (PNG, JPG, WebP, SVG)**:
-
-  * Drag-and-drop or file upload support for PNG, JPG, WebP, and SVG logos
-  * Automatic resolution & viewBox auto-scaling (handles 16×16 to 4K / 1024px viewBox SVGs like Godot Engine)
-  * Paste raw `<svg>...</svg>` code directly into the generator
-
-* **Endless FX Customization**:
-
-  * Universal Logo Tinting: Color-tint ANY uploaded logo image, SVG file, or preset
-  * Logo Outline / Stroke: Add a customizable stroke outline around any logo with custom width & color
-  * Text Gradients: Custom Top & Bottom gradient colors for text
-  * Text Outline / Stroke: Crisp text outlines with adjustable stroke width
-  * Optional White Circle Disk: Toggle optional background circle disk behind logos
-
-* **Save & Load System**:
-
-  * Browser Memory: Quick Save & Load presets directly in your browser (`localStorage`)
-  * Config Export / Import: Export & Import `.json` configuration files to share or backup presets
-
-* **High-Resolution Exports**:
-
-  * Export vector SVG (`.svg`) files
-  * Export ultra crisp 3× high-resolution PNG (`.png`) images
+- **Browse presets** searches 185 official badges in nine categories, including each badge’s Cozy, Compact, Cozy Minimal, and Compact Minimal variants. Preview and SVG export use the original files.
+- **Customize** opens an editable preset with its original appearance. Text, color, padding, and background edits retain the untouched artwork.
+- **Build custom badges** with the upstream template dimensions: 56 px Cozy and 40 px Compact, including the square Minimal versions. Choose icons from logos extracted from all 185 official presets, Font Awesome, theSVG, pasted SVG, or uploaded PNG, JPG, WebP, GIF, and SVG logos. Set independent title and subtitle gradients with any angle and multiple positioned color stops.
+- **Export** as SVG, 3× PNG, or a ZIP with all four styles. Copy Markdown, HTML, or SVG markup from the preview panel.
+- **Save** editor settings in your browser or export them as JSON.
+- **Submit** a custom badge to [devinsbadges-customs](https://github.com/intensed-dev/devinsbadges-customs). Badgeworks prepares the GitHub issue draft and downloads its PNG and SVG attachments.
 
 ## Quick Start
 
@@ -87,13 +54,19 @@ You can use the live website [here!](https://arthursimin.github.io/Badgeworks/),
 
 ## Structure
 
-* `index.html` — Application UI structure
-* `index.css` — Styling and responsive layout
-* `app.js` — Core application logic and rendering engine
+- `index.html` and `index.css` contain the responsive editor.
+- `app.js` handles editing, rendering, settings, and exports.
+- `presets.js` handles catalog browsing and customization of original SVGs.
+- `zip.js` writes the download archives.
+- `assets/devins-badges/` contains the original SVGs from `@intergrav/devins-badges@3.3.1` and generated browser catalog data. The catalog and exports work offline when opening `index.html` directly. Remote icon providers and issue submission need a connection.
+
+### Verify the official catalog
+
+Run `python scripts/sync-official-badges.py --check` to compare every local SVG byte-for-byte against the pinned npm package and confirm coverage of all four reference pages. Run the script without `--check` to regenerate the catalog.
 
 ## License
 
-This project is licensed under the MIT License.
+Badgeworks is licensed under the MIT License. The bundled Devin’s Badges SVGs are licensed under [CC0 1.0](assets/devins-badges/CC0-1.0.txt). The embedded Inter font is distributed under the [SIL Open Font License](assets/fonts/Inter-OFL.txt).
 
 ## Credits
 
