@@ -8,6 +8,7 @@
   <img height="56" src="devin_google_antigravity_badge.svg" />
   <img height="56" src="devin_opencode_badge.svg" />
   <img height="56" src="devin_kiro_badge.svg" />
+  <img height="56" src="devin_codex_badge.svg" />
 </p>
 
 
