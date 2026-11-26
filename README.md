@@ -70,6 +70,10 @@ Renders the badge and returns PNG bytes. `options`:
 
 Rasterize an arbitrary SVG string to PNG.
 
+### `generateBadgeBatch(labels, config?, options?)` → `Promise<Array>`
+
+Render 1–100 labels in order. Each label is a title string or an object with `topText` and `bottomText`. Use `format: 'svg'`, `'png'`, or `'both'` to return the corresponding fields alongside the labels. PNG options are the same as for `generateBadgePng`.
+
 ### Helpers
 
 - `normalizeConfig(config)` — returns the fully-resolved config with defaults applied.
@@ -93,8 +97,12 @@ Rasterize an arbitrary SVG string to PNG.
 | `diskColor` / `logoColor` / `textColor` / `subtitleColor` | … | Colors |
 | `diskDiameter` / `userLogoScale` | `40` / `40` | Icon sizing |
 | `useTextGrad` / `useSubtitleGrad` | off | Independent title and subtitle gradients |
-| `textGradients` | — | Browser-compatible `{ title, subtitle }` gradients. Each has an `angle` in degrees and `stops: [{ color, offset }]` with offsets from 0 to 100. |
+| `textGradients` | — | Browser-compatible `{ title, subtitle, logo, outline, border }` gradients. Each has an `angle` in degrees and `stops: [{ color, offset }]` with offsets from 0 to 100. |
 | `titleGradientPreset` / `subtitleGradientPreset` | — | Named palettes such as `rainbow`, used when explicit stops are absent |
+| `logoGap` / `textAlignment` | Template | Logo-to-text spacing in pixels and `template`, `left`, `center`, or `right` text alignment |
+| `useCustomLogoColor` / `useLogoGrad` | off | Recolor a logo with a solid fill or its gradient. Enable both for a gradient. |
+| `borderMode` | `template` | `template`, `transparent`, `solid`, or `gradient`. Use `borderColor`, `borderWidth`, and `borderOpacity` (0–100) for custom borders. |
+| `logoGradientPreset` / `outlineGradientPreset` / `borderGradientPreset` | — | Named palettes, used when explicit stops are absent |
 | `officialBadge` | — | Catalog ID such as `social/youtube-plural`. Returns the original SVG for the selected style. |
 | `useTextStroke` / `useTextShadow` + related | off | Text effects |
 | `useCustomLogoColor` / `useLogoStroke` / `useLogoStrokeGrad` / `useLogoShadow` + related | off | Logo effects |
@@ -122,3 +130,5 @@ See [`src/index.js`](src/index.js) `DEFAULTS` for the complete list.
 
 MIT. Based on [Devin's Badges](https://github.com/intergrav/devins-badges) by intergrav. The Inter font is © Rasmus Andersson (rsms), licensed under the [SIL Open Font License 1.1](fonts/LICENSE-Inter.txt).
 Cozy is 56 px high with a 40 px logo frame. Compact is 40 px high with a 28 px logo frame and both labels on one line. Minimal styles are square. The package bundles all 740 official SVGs and their isolated logo artwork. Legacy two-color title gradients still load.
+
+Use `faIconName: '?'` or `'question'` for an offline question mark. An unavailable remote icon rejects the render with an error.

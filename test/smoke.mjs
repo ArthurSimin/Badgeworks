@@ -104,3 +104,29 @@ main().catch((e) => {
   assert(normalizeConfig({ faPack: 'fa-brands', faIconName: 'github' }).faIconName === 'github', 'Explicit icon name wins over the default');
   console.log('Upstream geometry, exact presets, gradients, and icon config passed.');
 }
+
+{
+  const { generateBadge, generateBadgePng, generateBadgeBatch } = await import('../src/index.js');
+  const config = { faIconName: '?', faPack: 'fa-brands', logoGap: 21, textAlignment: 'right',
+    useCustomLogoColor: true, useLogoGrad: true, logoGradientPreset: 'rainbow',
+    useLogoStroke: true, useLogoStrokeGrad: true, outlineGradientPreset: 'sunset',
+    borderMode: 'gradient', borderGradientPreset: 'ocean', borderWidth: 3, borderOpacity: 40 };
+  const svg = await generateBadge(config);
+  assert(svg.includes('badge-logo-fill-cozy-') && svg.includes('#8b00ff'), 'Question mark works offline with logo gradients');
+  assert(svg.includes('badge-logo-stroke-grad-cozy-') && svg.includes('#ff512f'), 'Outline palette renders');
+  assert(svg.includes('badge-border-cozy-') && svg.includes('stroke-opacity="0.4" stroke-width="3"'), 'Gradient border renders');
+  assert(!(await generateBadge({ borderMode: 'transparent' })).includes('stroke-opacity='), 'Transparent border omits the template stroke');
+  assert((await generateBadgePng(config)).readUInt32BE(20) === 168, 'Styled badge rasterizes at 3×');
+  const batch = await generateBadgeBatch(['Alpha', { topText: 'Built with', bottomText: 'Beta' }], config, { format: 'both' });
+  assert(batch.length === 2 && batch[0].svg.includes('>Alpha</text>') && batch[1].svg.includes('>Built with</text>'), 'Batch keeps independent labels');
+  assert(batch.every(item => item.png.readUInt32BE(20) === 168), 'Batch PNG members have correct height');
+  await import('node:assert/strict').then(({default: strict}) => strict.rejects(generateBadgeBatch(['']), /needs a title/));
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => new Response('', { status: 404 });
+    await import('node:assert/strict').then(({default: strict}) => strict.rejects(generateBadge({ faIconName: 'missing-test' }), /icon unavailable/));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  console.log('Logo and outline gradients, layout, borders, batch, and icon errors passed.');
+}
