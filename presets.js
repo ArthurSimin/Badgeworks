@@ -205,9 +205,10 @@ function leaveOfficialBadge() {
 const OFFICIAL_EDIT_FIELDS = [
   'topText', 'bottomText', 'textColor', 'subtitleColor', 'radius', 'paddingRight', 'bgStops',
   'rawSvgDataUrl', 'iconMode', 'presetKey', 'logoPosition', 'userLogoScale', 'showDisk',
-  'useCustomLogoColor', 'useLogoStroke', 'useLogoShadow', 'useTextGrad', 'useSubtitleGrad', 'useTextStroke', 'useTextShadow'
+  'textAlignment', 'logoGap', 'borderMode', 'borderColor', 'borderWidth', 'borderOpacity',
+  'useCustomLogoColor', 'useLogoGrad', 'logoColor', 'useLogoStroke', 'useLogoStrokeGrad', 'useLogoShadow', 'useTextGrad', 'useSubtitleGrad', 'useTextStroke', 'useTextShadow'
 ];
-const ORIGINAL_LAYER_EDITS = ['topText', 'bottomText', 'textColor', 'subtitleColor', 'radius', 'paddingRight', 'bgStops', 'useTextGrad', 'useSubtitleGrad'];
+const ORIGINAL_LAYER_EDITS = ['topText', 'bottomText', 'textColor', 'subtitleColor', 'radius', 'paddingRight', 'bgStops', 'useTextGrad', 'useSubtitleGrad', 'useCustomLogoColor', 'useLogoGrad', 'logoColor', 'borderMode', 'borderColor', 'borderWidth', 'borderOpacity'];
 
 function officialLayers(svg) {
   const layers = svg.firstElementChild.hasAttribute('clip-path') ? svg.firstElementChild : svg;
@@ -264,7 +265,7 @@ function loadOfficialLogo(id, style) {
       svg.setAttribute('viewBox', Object.values(viewport).join(' '));
       svg.removeAttribute('width');
       svg.removeAttribute('height');
-      return { source: svgDataUrl(new XMLSerializer().serializeToString(svg)), viewport };
+      return { source: svgDataUrl(new XMLSerializer().serializeToString(svg)), viewport, bounds: box };
     }).catch(error => {
       officialLogoCache.delete(key);
       throw error;
@@ -337,11 +338,12 @@ async function customizeOfficialBadge() {
       bgGradPreset: 'custom',
       radius: Math.round(Number(background.getAttribute('rx'))) || 8,
       paddingRight: 12,
+      textAlignment: 'template', logoGap: '', borderMode: 'template',
       userLogoScale: DEFAULT_LOGO_SIZE,
       showDisk: false,
       textColor: normalizeOfficialColor(lettering?.lastElementChild?.getAttribute('fill')) || '#ffffff',
       subtitleColor: normalizeOfficialColor(lettering?.firstElementChild?.getAttribute('fill')) || '#e8e8e8',
-      useCustomLogoColor: false, useLogoStroke: false, useLogoShadow: false,
+      useCustomLogoColor: false, useLogoGrad: false, useLogoStroke: false, useLogoShadow: false,
       useLogoStrokeGrad: false, useTextGrad: false, useSubtitleGrad: false, useTextStroke: false, useTextShadow: false
     }, false);
     const config = getBadgeConfig();
@@ -365,10 +367,16 @@ function prepareOfficialBadge(style) {
   const config = state.officialBadge ? null : getBadgeConfig();
   const baseline = state.customizedBaseline;
   const changes = config ? OFFICIAL_EDIT_FIELDS.filter(key => {
+    if (key === 'textAlignment' && !baseline[key]) return config[key] !== 'template';
+    if (key === 'logoGap' && baseline[key] === undefined) return config[key] !== '';
+    if (key === 'borderMode' && !baseline[key]) return config[key] !== 'template';
+    if (['borderColor', 'borderWidth', 'borderOpacity'].includes(key) && config.borderMode === 'template') return false;
     if (key === 'bgStops') return config.bgStops.join() !== baseline.bgStops.join();
     if (key === 'presetKey' && config.iconMode !== 'preset') return false;
     if (key === 'rawSvgDataUrl' && config.iconMode !== 'raw') return false;
-    if (key === 'useSubtitleGrad') return config[key] !== Boolean(baseline[key]);
+    if (key === 'logoColor' && (!config.useCustomLogoColor || config.useLogoGrad)) return false;
+    if (key === 'useLogoGrad' && !config.useCustomLogoColor) return false;
+    if (['useSubtitleGrad', 'useLogoGrad', 'useLogoStrokeGrad'].includes(key)) return config[key] !== Boolean(baseline[key]);
     return config[key] !== baseline[key];
   }) : [];
   if (changes.some(key => !ORIGINAL_LAYER_EDITS.includes(key))) return null;
@@ -410,6 +418,30 @@ function editOfficialLayers(markup, config, changes, style) {
   }
   if (lettering && changes.some(key => !['bgStops', 'radius'].includes(key))) {
     editOfficialLettering(svg, layers, config, changed, style);
+  }
+  if (config.useCustomLogoColor) {
+    const { logo } = layers;
+    const { logo: bounds } = getOfficialGeometry(svg, layers);
+    const { width, height } = getSvgDimensions(markup);
+    const artwork = new XMLSerializer().serializeToString(logo);
+    const gradient = config.useLogoGrad ? config.textGradients.logo : null;
+    const paint = buildLogoPaint(artwork, 'badge-edit-logo-fill', bounds,
+      Number(svg.getAttribute('width')) || width, height, gradient, config.logoColor);
+    const replacement = parseSvg(`<svg xmlns="${svg.namespaceURI}">${paint}</svg>`);
+    const group = svg.ownerDocument.createElementNS(svg.namespaceURI, 'g');
+    group.append(...replacement.children);
+    logo.replaceWith(group);
+  }
+  if (config.borderMode !== 'template') {
+    const width = Number(svg.getAttribute('width'));
+    const height = Number(svg.getAttribute('height'));
+    const paint = renderBadgeBorder(style, width, height, Number(background.getAttribute('rx')), config);
+    if (paint.definitions) {
+      const definitions = parseSvg(`<svg xmlns="${svg.namespaceURI}">${paint.definitions}</svg>`);
+      svg.querySelector('defs').append(...definitions.children);
+    }
+    const replacement = parseSvg(`<svg xmlns="${svg.namespaceURI}">${paint.markup}</svg>`);
+    border.replaceWith(...replacement.children);
   }
   return new XMLSerializer().serializeToString(svg);
 }

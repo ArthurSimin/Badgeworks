@@ -43,6 +43,8 @@
 
       <!-- Presets &amp; Actions Bar -->
       <div class="presets-bar">
+        <button type="button" class="action-btn" id="undo-edit" disabled>Undo</button>
+        <button type="button" class="action-btn" id="redo-edit" disabled>Redo</button>
         <button type="button" class="action-btn" onclick="saveConfigToLocalStorage()" title="Save preset to browser memory">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           Save
@@ -133,6 +135,19 @@
             </div>
           </div>
 
+          <div class="grid-2col">
+            <div class="field-group">
+              <label for="text-alignment">Text alignment</label>
+              <select id="text-alignment" class="input-text" onchange="renderBadge()">
+                <option value="template">Template</option><option value="left">Left</option>
+                <option value="center">Center</option><option value="right">Right</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="logo-gap">Logo gap (px)</label>
+              <input id="logo-gap" class="input-text" type="number" min="0" max="64" step="1" placeholder="Template" oninput="renderBadge()">
+            </div>
+          </div>
           <details class="effect-details">
             <summary>Text effects &amp; colors</summary>
             <div class="check-row">
@@ -362,6 +377,7 @@
             <div class="check-row">
               <label class="check-item"><input type="checkbox" id="show-disk-toggle" onchange="renderBadge()"> Circle Behind Logo</label>
               <label class="check-item"><input type="checkbox" id="custom-logo-color-toggle" onchange="renderBadge()"> Custom Logo Color</label>
+              <label class="check-item"><input type="checkbox" id="logo-grad-toggle" onchange="renderBadge()"> Logo Gradient</label>
               <label class="check-item"><input type="checkbox" id="logo-stroke-toggle" onchange="renderBadge()"> Logo Outline</label>
             </div>
             <div class="check-row">
@@ -398,22 +414,44 @@
                 </div>
               </div>
             </div>
-            <div class="grid-2col">
-              <div class="field-group">
-                <label for="logo-stroke-grad-top">Gradient Top</label>
-                <div class="color-picker-wrap">
-                  <input type="color" id="logo-stroke-grad-top" value="#ffffff" onchange="renderBadge()">
-                  <span class="color-val">#FFFFFF</span>
+            <fieldset class="text-gradient-editor" id="logo-gradient-editor" hidden>
+              <legend>Logo gradient</legend>
+              <div class="field-group text-gradient-preset">
+                <label for="logo-gradient-preset">Logo gradient preset</label>
+                <select id="logo-gradient-preset" class="input-text"></select>
+              </div>
+              <div class="text-gradient-header">
+                <div class="angle-dial" id="logo-gradient-dial" role="slider" tabindex="0" aria-label="Logo gradient angle dial" aria-valuemin="0" aria-valuemax="360" aria-valuenow="180" aria-valuetext="180 degrees">
+                  <span class="angle-dial-needle" aria-hidden="true"></span>
+                </div>
+                <div class="text-gradient-angle-fields">
+                  <label for="logo-gradient-angle">Angle (°)</label>
+                  <input type="number" id="logo-gradient-angle" min="0" max="360" step="any" value="180" class="input-text">
+                  <div class="text-gradient-preview" id="logo-gradient-preview" aria-hidden="true"></div>
                 </div>
               </div>
-              <div class="field-group">
-                <label for="logo-stroke-grad-bot">Gradient Bottom</label>
-                <div class="color-picker-wrap">
-                  <input type="color" id="logo-stroke-grad-bot" value="#61dafb" onchange="renderBadge()">
-                  <span class="color-val">#61DAFB</span>
+              <div id="logo-gradient-stops" class="bg-stop-list"></div>
+              <button type="button" class="btn btn-secondary text-gradient-add" id="logo-gradient-add">Add color stop</button>
+            </fieldset>
+            <fieldset class="text-gradient-editor" id="outline-gradient-editor" hidden>
+              <legend>Outline gradient</legend>
+              <div class="field-group text-gradient-preset">
+                <label for="outline-gradient-preset">Outline gradient preset</label>
+                <select id="outline-gradient-preset" class="input-text"></select>
+              </div>
+              <div class="text-gradient-header">
+                <div class="angle-dial" id="outline-gradient-dial" role="slider" tabindex="0" aria-label="Outline gradient angle dial" aria-valuemin="0" aria-valuemax="360" aria-valuenow="180" aria-valuetext="180 degrees">
+                  <span class="angle-dial-needle" aria-hidden="true"></span>
+                </div>
+                <div class="text-gradient-angle-fields">
+                  <label for="outline-gradient-angle">Angle (°)</label>
+                  <input type="number" id="outline-gradient-angle" min="0" max="360" step="any" value="180" class="input-text">
+                  <div class="text-gradient-preview" id="outline-gradient-preview" aria-hidden="true"></div>
                 </div>
               </div>
-            </div>
+              <div id="outline-gradient-stops" class="bg-stop-list"></div>
+              <button type="button" class="btn btn-secondary text-gradient-add" id="outline-gradient-add">Add color stop</button>
+            </fieldset>
           </details>
         </div>
 
@@ -459,6 +497,61 @@
               <input type="range" id="padding-horizontal" min="8" max="32" value="12" class="range-slider" oninput="renderBadge()">
             </div>
           </div>
+          <details class="effect-details">
+            <summary>Border</summary>
+            <div class="grid-2col">
+              <div class="field-group">
+                <label for="border-mode">Border finish</label>
+                <select id="border-mode" class="input-text" onchange="renderBadge()">
+                  <option value="template">Template</option><option value="transparent">Transparent</option>
+                  <option value="solid">Solid</option><option value="gradient">Gradient</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="border-color">Border color</label>
+                <input id="border-color" type="color" value="#ffffff" oninput="renderBadge()">
+              </div>
+              <div class="field-group">
+                <label for="border-width">Border width (px)</label>
+                <input id="border-width" class="input-text" type="number" min="0" max="12" step="0.1" value="2.1" oninput="renderBadge()">
+              </div>
+              <div class="field-group">
+                <label for="border-opacity">Border opacity (%)</label>
+                <input id="border-opacity" class="input-text" type="number" min="0" max="100" step="1" value="100" oninput="renderBadge()">
+              </div>
+            </div>
+            <fieldset class="text-gradient-editor" id="border-gradient-editor" hidden>
+              <legend>Border gradient</legend>
+              <div class="field-group text-gradient-preset">
+                <label for="border-gradient-preset">Border gradient preset</label>
+                <select id="border-gradient-preset" class="input-text"></select>
+              </div>
+              <div class="text-gradient-header">
+                <div class="angle-dial" id="border-gradient-dial" role="slider" tabindex="0" aria-label="Border gradient angle dial" aria-valuemin="0" aria-valuemax="360" aria-valuenow="180" aria-valuetext="180 degrees">
+                  <span class="angle-dial-needle" aria-hidden="true"></span>
+                </div>
+                <div class="text-gradient-angle-fields">
+                  <label for="border-gradient-angle">Angle (°)</label>
+                  <input type="number" id="border-gradient-angle" min="0" max="360" step="any" value="180" class="input-text">
+                  <div class="text-gradient-preview" id="border-gradient-preview" aria-hidden="true"></div>
+                </div>
+              </div>
+              <div id="border-gradient-stops" class="bg-stop-list"></div>
+              <button type="button" class="btn btn-secondary text-gradient-add" id="border-gradient-add">Add color stop</button>
+            </fieldset>
+          </details>
+          <details class="effect-details" id="palette-editor">
+            <summary>Brand palettes</summary>
+            <div class="workspace-actions">
+              <input id="palette-name" class="input-text" type="text" maxlength="50" aria-label="Palette name" placeholder="Palette name">
+              <button type="button" class="btn btn-secondary" id="palette-save">Save palette</button>
+            </div>
+            <div class="workspace-actions">
+              <select id="palette-list" class="input-text" aria-label="Saved palettes"></select>
+              <button type="button" class="btn btn-secondary" id="palette-apply" disabled>Apply palette</button>
+              <button type="button" class="btn btn-secondary" id="palette-delete" disabled>Delete palette</button>
+            </div>
+          </details>
         </div>
 
       </div>
@@ -474,7 +567,12 @@
             <span class="dimension-badge" id="badge-size-display">—</span>
           </div>
 
-          <div class="badge-stage" id="badge-stage"></div>
+          <div class="badge-stage" id="badge-stage" data-surface="dark"></div>
+          <div class="stage-surfaces" role="group" aria-label="Preview background">
+            <button type="button" class="surface-option" data-surface="dark" aria-pressed="true">Dark</button>
+            <button type="button" class="surface-option" data-surface="light" aria-pressed="false">Light</button>
+            <button type="button" class="surface-option" data-surface="checker" aria-pressed="false">Checkerboard</button>
+          </div>
           <p class="preview-status" id="preview-status" role="status"></p>
           <div class="original-actions" id="original-actions" hidden>
             <button type="button" class="btn btn-secondary" id="customize-original" onclick="customizeOfficialBadge()">Customize</button>
@@ -502,6 +600,22 @@
             Submit badge on GitHub
           </button>
         </div>
+
+        <details class="stage-card" id="batch-editor">
+          <summary>Batch generation</summary>
+          <form class="field-group" id="batch-form">
+            <label for="batch-labels">Badge labels</label>
+            <textarea id="batch-labels" class="input-text" rows="5" placeholder="Badge title&#10;Subtitle | Badge title" required></textarea>
+            <span class="workspace-hint">One badge per line. Use title only or subtitle | title. The ZIP uses the current style and settings.</span>
+            <div class="workspace-actions">
+              <select id="batch-format" class="input-text" aria-label="Batch file format">
+                <option value="svg">SVG</option><option value="png">PNG (3×)</option><option value="both">SVG and PNG</option>
+              </select>
+              <button type="submit" class="btn btn-secondary">Download batch ZIP</button>
+            </div>
+            <span id="batch-status" role="status"></span>
+          </form>
+        </details>
 
         <!-- Code Snippet Output Box -->
         <div class="code-card">
@@ -593,6 +707,7 @@
   <script src="presets.js"></script>
   <script src="zip.js"></script>
   <script src="assets/fonts/badge-font.js"></script>
+  <script src="workspace.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

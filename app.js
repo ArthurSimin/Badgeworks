@@ -21,9 +21,12 @@ const DEFAULT_LOGO_SIZE = 40;
 const COMPACT_LABEL_GAP = 4;
 const MAX_BADGE_WIDTH = 420;
 
-const TEXT_GRADIENT_CONTROLS = {
+const GRADIENT_CONTROLS = {
   title: { label: 'Title', toggle: 'text-grad-toggle', solid: 'text-color' },
-  subtitle: { label: 'Subtitle', toggle: 'subtitle-grad-toggle', solid: 'subtitle-color' }
+  subtitle: { label: 'Subtitle', toggle: 'subtitle-grad-toggle', solid: 'subtitle-color' },
+  logo: { label: 'Logo', toggle: 'logo-grad-toggle', solid: 'logo-color', parent: 'custom-logo-color-toggle' },
+  outline: { label: 'Outline', toggle: 'logo-stroke-grad-toggle', parent: 'logo-stroke-toggle' },
+  border: { label: 'Border' }
 };
 
 function defaultTextGradient(color = '#61dafb') {
@@ -41,7 +44,8 @@ const state = {
   rawSvgDataUrl: '', // data URL built from pasted raw SVG code
   uploadFilename: '',
   bgStops: ['#0d6ffb', '#0157ff'], // background gradient stops (2–7)
-  textGradients: { title: defaultTextGradient(), subtitle: defaultTextGradient('#e8e8e8') },
+  textGradients: { title: defaultTextGradient(), subtitle: defaultTextGradient('#e8e8e8'),
+    logo: defaultTextGradient(), outline: { angle: 180, stops: [{ color: '#ffffff', offset: 0 }, { color: '#61dafb', offset: 100 }] }, border: defaultTextGradient() },
   bgGradPreset: 'custom', // name of the currently-applied gradient preset ('custom' = manual)
   codeTab: 'md' // 'md' | 'html' | 'svg'
 };
@@ -74,6 +78,14 @@ const EXTRA_PRESET_ICONS = {
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
   setupOfficialPresets();
+  setupWorkspace();
+  const surfaces = document.querySelectorAll('.surface-option');
+  for (const button of surfaces) {
+    button.addEventListener('click', () => {
+      document.getElementById('badge-stage').dataset.surface = button.dataset.surface;
+      for (const option of surfaces) option.setAttribute('aria-pressed', String(option === button));
+    });
+  }
   setupPresetIcons();
   setIconMode(state.iconMode, false);
   setLogoPosition(state.logoPosition, false);
@@ -107,6 +119,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('drop', (e) => e.preventDefault());
 
   new ResizeObserver(fitPreviewSvg).observe(document.getElementById('badge-stage'));
+  const header = document.querySelector('.app-header');
+  new ResizeObserver(() => {
+    document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
+  }).observe(header);
   setCodeTab(state.codeTab);
   new FontFace(BADGE_FONT, `url(${BADGE_FONT_URL})`, { weight: '500 800' })
     .load().then(font => document.fonts.add(font)).catch(() => {})
@@ -182,8 +198,10 @@ function parseFontAwesomeInput(raw) {
   const explicitPack = tokens.map(token => aliases[token] || token).find(token => FA_PACK_TOKENS.includes(token));
   const ignored = /^fa-(?:solid|brands?|regular|thin|light|duotone|sharp(?:-.*)?|fw|spin.*|pulse|beat.*|bounce|flip.*|[0-9]+x|xs|sm|lg|xl|2xs|2xl)$/;
   const iconClass = tokens.find(token => /^fa-[a-z0-9-]+$/.test(token) && !ignored.test(token));
-  const name = iconClass?.slice(3) || (tokens.length === 1 && /^[a-z0-9-]+$/.test(text) ? text : '');
-  if (explicitPack) pack.value = explicitPack;
+  const name = text === '?' ? 'question'
+    : iconClass?.slice(3) || (tokens.length === 1 && /^[a-z0-9-]+$/.test(text) ? text : '');
+  if (name === 'question') pack.value = 'fa-solid';
+  else if (explicitPack) pack.value = explicitPack;
   if (name && input.value !== name) input.value = name;
   return name ? `${pack.value} fa-${name}` : '';
 }
@@ -291,6 +309,13 @@ function extractFontAwesomeSvg(iconClass) {
     return Promise.resolve({
       viewBox: '0 0 320 512',
       pathData: document.querySelector('.brand-logo path').getAttribute('d')
+    });
+  }
+  if (folder === 'solid' && name === 'question') {
+    // Font Awesome Free 6.7.2 by Fonticons, Inc. (CC BY 4.0).
+    return Promise.resolve({
+      viewBox: '0 0 320 512',
+      pathData: 'M80 160c0-35.3 28.7-64 64-64l32 0c35.3 0 64 28.7 64 64l0 3.6c0 21.8-11.1 42.1-29.4 53.8l-42.2 27.1c-25.2 16.2-40.4 44.1-40.4 74l0 1.4c0 17.7 14.3 32 32 32s32-14.3 32-32l0-1.4c0-8.2 4.2-15.8 11-20.2l42.2-27.1c36.6-23.6 58.8-64.1 58.8-107.7l0-3.6c0-70.7-57.3-128-128-128l-32 0C73.3 32 16 89.3 16 160c0 17.7 14.3 32 32 32s32-14.3 32-32zm80 320a40 40 0 1 0 0-80 40 40 0 1 0 0 80z'
     });
   }
   const url = `https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/svgs/${folder}/${name}.svg`;
@@ -698,26 +723,30 @@ function sortedGradientStops(gradient) {
 }
 
 function selectedTextGradient(part) {
-  return document.getElementById(TEXT_GRADIENT_CONTROLS[part].toggle).checked ? state.textGradients[part] : null;
+  return document.getElementById(GRADIENT_CONTROLS[part].toggle).checked ? state.textGradients[part] : null;
 }
 
-function setupTitleGradientPresets() {
-  const select = document.getElementById('title-gradient-preset');
+function setupGradientPresets(part) {
+  const select = document.getElementById(`${part}-gradient-preset`);
+  if (!select) return;
   const background = document.getElementById('bg-grad-preset');
   select.replaceChildren(...Array.from(background.options, option => option.cloneNode(true)));
   // Custom reflects edited stops. Each named preset replaces only the stops.
   select.options[0].disabled = true;
   select.addEventListener('change', () => {
     const colors = BG_GRADIENT_PRESETS[select.value];
-    state.textGradients.title.stops = colors.map((color, index) => ({
+    if (!colors) return;
+    state.textGradients[part].stops = colors.map((color, index) => ({
       color, offset: svgNumber(100 * index / (colors.length - 1))
     }));
-    renderTextGradientStops('title');
+    renderTextGradientStops(part);
     renderBadge();
   });
 }
 
-function syncTitleGradientPreset(gradient) {
+function syncGradientPreset(part, gradient) {
+  const select = document.getElementById(`${part}-gradient-preset`);
+  if (!select) return;
   const stops = sortedGradientStops(gradient);
   const match = Object.entries(BG_GRADIENT_PRESETS).find(([, colors]) =>
     colors.length === stops.length && colors.every((color, index) =>
@@ -725,7 +754,7 @@ function syncTitleGradientPreset(gradient) {
       Math.abs(stops[index].offset - 100 * index / (colors.length - 1)) < 0.001
     )
   );
-  document.getElementById('title-gradient-preset').value = match?.[0] || 'custom';
+  select.value = match?.[0] || 'custom';
 }
 
 function setupGradientDial(part, input) {
@@ -772,8 +801,8 @@ function setupGradientDial(part, input) {
 }
 
 function setupTextGradientEditors() {
-  setupTitleGradientPresets();
-  for (const part of Object.keys(TEXT_GRADIENT_CONTROLS)) {
+  for (const part of Object.keys(GRADIENT_CONTROLS)) {
+    setupGradientPresets(part);
     const angleInput = document.getElementById(`${part}-gradient-angle`);
     setupGradientDial(part, angleInput);
     angleInput.addEventListener('input', event => {
@@ -810,7 +839,7 @@ function setupTextGradientEditors() {
 }
 
 function renderTextGradientStops(part) {
-  const { label } = TEXT_GRADIENT_CONTROLS[part];
+  const { label } = GRADIENT_CONTROLS[part];
   const gradient = state.textGradients[part];
   const list = document.getElementById(`${part}-gradient-stops`);
   document.getElementById(`${part}-gradient-angle`).value = gradient.angle;
@@ -867,18 +896,22 @@ function renderTextGradientStops(part) {
 
 function updateTextGradientControls() {
   const style = BADGE_LAYOUTS[state.style];
-  for (const [part, controls] of Object.entries(TEXT_GRADIENT_CONTROLS)) {
+  for (const [part, controls] of Object.entries(GRADIENT_CONTROLS)) {
     const toggle = document.getElementById(controls.toggle);
-    const available = !style.minimal;
-    toggle.disabled = !available;
-    document.getElementById(controls.solid).disabled = !available || toggle.checked;
-    document.getElementById(`${part}-gradient-editor`).hidden = !available || !toggle.checked;
+    const enabled = toggle ? toggle.checked : document.getElementById('border-mode').value === 'gradient';
+    const available = controls.parent
+      ? state.logoPosition !== 'none' && document.getElementById(controls.parent).checked
+        && (part !== 'outline' || !document.getElementById('show-disk-toggle').checked)
+      : part === 'border' || !style.minimal;
+    if (toggle) toggle.disabled = !available;
+    if (controls.solid) document.getElementById(controls.solid).disabled = !available || enabled;
+    document.getElementById(`${part}-gradient-editor`).hidden = !available || !enabled;
     const gradient = state.textGradients[part];
     const dial = document.getElementById(`${part}-gradient-dial`);
     dial.style.setProperty('--dial-angle', `${gradient.angle}deg`);
     dial.setAttribute('aria-valuenow', gradient.angle);
     dial.setAttribute('aria-valuetext', `${gradient.angle} degrees`);
-    if (part === 'title' && available && toggle.checked) syncTitleGradientPreset(gradient);
+    if (available && enabled) syncGradientPreset(part, gradient);
     const stops = sortedGradientStops(gradient).map(stop => `${stop.color} ${stop.offset}%`);
     document.getElementById(`${part}-gradient-preview`).style.backgroundImage =
       `linear-gradient(${gradient.angle}deg, ${stops.join(', ')})`;
@@ -898,7 +931,7 @@ function buildTextGradient(id, gradient, { x, y, width, height }) {
 }
 
 function restoreTextGradients(config) {
-  for (const part of Object.keys(TEXT_GRADIENT_CONTROLS)) {
+  for (const part of Object.keys(GRADIENT_CONTROLS)) {
     const gradient = config.textGradients?.[part];
     if (gradient && Number.isFinite(gradient.angle) && Array.isArray(gradient.stops) && gradient.stops.length >= 2
       && gradient.stops.every(stop => stop && isHexColor(stop.color) && Number.isFinite(stop.offset))) {
@@ -910,6 +943,12 @@ function restoreTextGradients(config) {
       const legacy = defaultTextGradient(isHexColor(config.textGradTop) ? config.textGradTop : undefined);
       if (isHexColor(config.textGradBot)) legacy.stops[1].color = config.textGradBot;
       state.textGradients.title = legacy;
+    }
+    if (part === 'outline' && !gradient && (isHexColor(config.logoStrokeGradTop) || isHexColor(config.logoStrokeGradBot))) {
+      state.textGradients.outline = { angle: 180, stops: [
+        { color: isHexColor(config.logoStrokeGradTop) ? config.logoStrokeGradTop : '#ffffff', offset: 0 },
+        { color: isHexColor(config.logoStrokeGradBot) ? config.logoStrokeGradBot : '#61dafb', offset: 100 }
+      ] };
     }
     renderTextGradientStops(part);
   }
@@ -935,18 +974,25 @@ function syncDependentControls() {
     });
   };
   updateTextGradientControls();
-  dep(document.getElementById('text-stroke-toggle')?.checked || false, ['text-stroke-color', 'text-stroke-width']);
-  dep(document.getElementById('text-shadow-toggle')?.checked || false, ['text-shadow-color', 'text-shadow-blur']);
-  dep(document.getElementById('show-disk-toggle')?.checked || false, ['disk-color', 'disk-size-slider']);
-  dep(document.getElementById('custom-logo-color-toggle')?.checked || false, ['logo-color']);
-  const logoStrokeOn = document.getElementById('logo-stroke-toggle')?.checked || false;
+  const borderMode = document.getElementById('border-mode').value;
+  dep(borderMode === 'solid', ['border-color']);
+  dep(['solid', 'gradient'].includes(borderMode), ['border-width', 'border-opacity']);
+  const hasText = !BADGE_LAYOUTS[state.style].minimal;
+  const hasLogo = state.logoPosition !== 'none';
+  const diskOn = hasLogo && document.getElementById('show-disk-toggle').checked;
+  dep(hasText, ['top-text', 'bottom-text', 'text-alignment', 'text-stroke-toggle', 'text-shadow-toggle']);
+  dep(hasLogo, ['show-disk-toggle', 'custom-logo-color-toggle', 'logo-shadow-toggle', 'icon-scale-slider']);
+  dep(hasLogo && !diskOn, ['logo-stroke-toggle']);
+  dep(hasLogo && hasText, ['logo-gap']);
+  dep(hasText && document.getElementById('text-stroke-toggle').checked, ['text-stroke-color', 'text-stroke-width']);
+  dep(hasText && document.getElementById('text-shadow-toggle').checked, ['text-shadow-color', 'text-shadow-blur']);
+  dep(diskOn, ['disk-color', 'disk-size-slider']);
+  const logoStrokeOn = hasLogo && !diskOn && document.getElementById('logo-stroke-toggle').checked;
   const logoStrokeGradOn = document.getElementById('logo-stroke-grad-toggle')?.checked || false;
   // Solid outline color is unused while the gradient outline is on
   dep(logoStrokeOn && !logoStrokeGradOn, ['logo-stroke-color']);
   dep(logoStrokeOn, ['logo-stroke-width']);
-  dep(logoStrokeOn && logoStrokeGradOn, ['logo-stroke-grad-top', 'logo-stroke-grad-bot']);
-  dep(document.getElementById('logo-shadow-toggle')?.checked || false, ['logo-shadow-color', 'logo-shadow-blur']);
-  dep(state.logoPosition !== 'none', ['icon-scale-slider']);
+  dep(hasLogo && document.getElementById('logo-shadow-toggle').checked, ['logo-shadow-color', 'logo-shadow-blur']);
 }
 
 // Disk-shaped convolution kernel for round (Photoshop-style) outline dilation.
@@ -1028,8 +1074,16 @@ function buildGradStrokeLayer({ maskId, silFilterId, gradId, width, height, logo
     `  <rect x="0" y="0" width="${width}" height="${height}" fill="url(#${gradId})" mask="url(#${maskId})"/>\n`;
 }
 
+function buildLogoPaint(artwork, id, bounds, width, height, gradient, color) {
+  const fill = gradient ? `url(#${id})` : color;
+  const definition = gradient ? buildTextGradient(id, gradient, bounds) : '';
+  return `<defs>${definition}<mask id="${id}-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="${width}" height="${height}" mask-type="alpha">${artwork}</mask></defs>`
+    + `<rect width="${width}" height="${height}" fill="${fill}" mask="url(#${id}-mask)"/>`;
+}
+
 // Main Render Logic
 function renderBadge() {
+  recordWorkspaceHistory();
   const token = ++renderToken;
   const stage = document.getElementById('badge-stage');
   const dimensions = document.getElementById('badge-size-display');
@@ -1057,7 +1111,7 @@ function renderBadge() {
   document.getElementById('padding-val').textContent = layout.minimal ? '—' : `${layout.right + pad.valueAsNumber - 12}px`;
 
   const render = prepareBadge(state.style);
-  const commit = (markup) => {
+  const commit = (markup, exportable = true) => {
     if (render.image) {
       const { width, height } = getSvgDimensions(markup);
       const image = new Image(width, height);
@@ -1070,12 +1124,12 @@ function renderBadge() {
     const art = stage.firstElementChild;
     dimensions.textContent = `${art.getAttribute('width')} × ${art.getAttribute('height')} px`;
     fitPreviewSvg();
-    cachedNativeSvg = markup;
+    cachedNativeSvg = exportable ? markup : '';
     updateSnippetOutput();
   };
 
   status.textContent = '';
-  if (render.preview) commit(render.preview);
+  if (render.preview) commit(render.preview, !render.pending);
   else {
     stage.replaceChildren();
     dimensions.textContent = '—';
@@ -1087,7 +1141,7 @@ function renderBadge() {
     status.textContent = render.image ? 'Loading original SVG…' : 'Loading icon…';
     render.pending.then(({ svg, missingIcon }) => {
       if (token !== renderToken) return;
-      commit(svg);
+      commit(svg, !missingIcon);
       status.textContent = missingIcon ? 'Icon unavailable. Check the name or try a different source.' : '';
     }).catch(() => {
       if (token === renderToken) status.textContent = 'The badge preview could not be loaded.';
@@ -1182,8 +1236,14 @@ function prepareBadge(style) {
 }
 
 async function getExportSvg(style = state.style) {
-  const { preview, pending } = prepareBadge(style);
-  return pending ? (await pending).svg : preview;
+  return resolveBadgeExport(prepareBadge(style));
+}
+
+async function resolveBadgeExport({ preview, pending }) {
+  if (!pending) return preview;
+  const { svg, missingIcon } = await pending;
+  if (missingIcon) throw new Error('Icon unavailable');
+  return svg;
 }
 
 function downloadFile(contents, filename, type) {
@@ -1264,9 +1324,9 @@ function templateShadow(id) {
   return `<filter id="${id}" x="-50%" y="-90%" width="200%" height="280%"><feDropShadow dx="0" dy="0" stdDeviation="2.8" flood-opacity=".25"/></filter>\n`;
 }
 
-function generateBadgeForStyle(styleName) {
-  const topText = document.getElementById('top-text').value;
-  const bottomText = document.getElementById('bottom-text').value;
+function generateBadgeForStyle(styleName, labels) {
+  const topText = labels?.top ?? document.getElementById('top-text').value;
+  const bottomText = labels?.bottom ?? document.getElementById('bottom-text').value;
   const showDisk = document.getElementById('show-disk-toggle').checked;
   const diskColor = document.getElementById('disk-color').value;
   const logoColor = document.getElementById('logo-color').value;
@@ -1298,12 +1358,13 @@ function generateBadgeForStyle(styleName) {
     ? subtitleAdvance + labelGap + titleAdvance
     : Math.max(subtitleAdvance, titleAdvance);
   const textEdge = (layout.right ?? layout.left) + paddingRight - 12;
-  const textXLeft = layout.left + logoSize + (layout.gap || 0);
+  const gap = Number(document.getElementById('logo-gap').valueAsNumber);
+  const textXLeft = layout.left + logoSize + (Number.isFinite(gap) ? Math.min(64, Math.max(0, gap)) : layout.gap || 0);
+  const alignment = document.getElementById('text-alignment').value;
   const horizontalSpace = noLogo ? textEdge * 2 : textXLeft + textEdge;
   const width = minimal ? height : Math.max(height, Math.min(MAX_BADGE_WIDTH, Math.round(textNaturalWidth + horizontalSpace)));
   const availableTextWidth = Math.max(1, width - horizontalSpace);
-  const textX = noLogo ? (width - Math.min(textNaturalWidth, availableTextWidth)) / 2
-    : logoOnRight ? textEdge : textXLeft;
+  const textX = noLogo || logoOnRight ? textEdge : textXLeft;
   const titleGradient = selectedTextGradient('title');
   const subtitleGradient = selectedTextGradient('subtitle');
 
@@ -1321,8 +1382,8 @@ function generateBadgeForStyle(styleName) {
   const logoStrokeColor = document.getElementById('logo-stroke-color')?.value || '#ffffff';
   const logoStrokeWidth = document.getElementById('logo-stroke-width')?.value || '2';
   const useLogoStrokeGrad = document.getElementById('logo-stroke-grad-toggle')?.checked || false;
-  const logoStrokeGradTop = document.getElementById('logo-stroke-grad-top')?.value || '#FFFFFF';
-  const logoStrokeGradBot = document.getElementById('logo-stroke-grad-bot')?.value || '#61DAFB';
+  const logoGradient = !noLogo && useCustomLogoColor && selectedTextGradient('logo');
+  const outlineGradient = selectedTextGradient('outline');
   const useLogoShadow = document.getElementById('logo-shadow-toggle')?.checked || false;
   const logoShadowColor = document.getElementById('logo-shadow-color')?.value || '#000000';
   const logoShadowBlur = parseFloat(document.getElementById('logo-shadow-blur')?.value || '2');
@@ -1342,7 +1403,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
 
   // Combined Logo Filter (Universal Tinting for all Uploads/Images/SVGs + Logo Outline Stroke + Drop Shadow)
   // (Gradient outlines render as a separate masked layer below, not in this filter.)
-  const effectiveExportTint = useCustomLogoColor && !showDisk;
+  const effectiveExportTint = !noLogo && useCustomLogoColor && !logoGradient;
   const effectiveExportStroke = solidStrokeActive;
   svgMarkup += buildLogoFxFilter(`badge-logo-fx-${styleName}`, {
     useTint: effectiveExportTint,
@@ -1358,7 +1419,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
   // Gradient outline defs (silhouette filter + vertical gradient paint)
   if (gradStrokeActive) {
     svgMarkup += buildStrokeSilFilter(`badge-logo-stroke-sil-${styleName}`, logoStrokeWidth);
-    svgMarkup += `    <linearGradient id="badge-logo-stroke-grad-${styleName}" x1="0" y1="0" x2="0" y2="1">\n      <stop stop-color="${logoStrokeGradTop}"/>\n      <stop offset="1" stop-color="${logoStrokeGradBot}"/>\n    </linearGradient>\n`;
+
   }
 
   // Text drop shadow filter (title + subtitle)
@@ -1371,7 +1432,8 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
   });
 
   const naturalRadius = radius === 8 ? layout.radius : radius;
-  const inset = layout.border / 2;
+  const border = renderBadgeBorder(styleName, width, height, naturalRadius);
+  svgMarkup += border.definitions;
   // The source artwork already carries the template shadow.
   if (!noLogo && !catalogIcon && !useLogoShadow) {
     svgMarkup += templateShadow('badge-default-logo-shadow');
@@ -1380,20 +1442,28 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
 
   svgMarkup += `  </defs>\n
   <rect width="${width}" height="${height}" fill="url(#badge-bg-${styleName})" rx="${naturalRadius}"/>
-  <rect width="${svgNumber(width - layout.border)}" height="${svgNumber(height - layout.border)}" x="${inset}" y="${inset}" stroke="#fff" stroke-opacity=".15" stroke-width="${layout.border}" rx="${svgNumber(Math.max(0, naturalRadius - inset))}"/>\n`;
+  ${border.markup}\n`;
 
   const useLogoFxFilter = effectiveExportTint || effectiveExportStroke || useLogoShadow;
   const logoFilterAttr = useLogoFxFilter ? ` filter="url(#badge-logo-fx-${styleName})"`
     : catalogIcon ? '' : ' filter="url(#badge-default-logo-shadow)"';
   const textFilterId = useTextShadow ? `badge-text-fx-${styleName}` : 'badge-default-text-shadow';
 
-  const gradStrokeLayer = logoCopy => gradStrokeActive
-    ? buildGradStrokeLayer({ maskId: `badge-logo-stroke-mask-${styleName}`, silFilterId: `badge-logo-stroke-sil-${styleName}`, gradId: `badge-logo-stroke-grad-${styleName}`, width, height, logoCopy })
-    : '';
-
   const iconX = minimal ? (height - logoSize) / 2 : logoOnRight ? width - logoSize - layout.left : layout.left;
   const iconPosition = (x, y, w, h) => `x="${svgNumber(x)}" y="${svgNumber(y)}" width="${svgNumber(w)}" height="${svgNumber(h)}"`;
   const defaultPosition = iconPosition(iconX, (height - logoSize) / 2, logoSize, logoSize);
+  const defaultBounds = { x: iconX, y: (height - logoSize) / 2, width: logoSize, height: logoSize };
+  const paintLogo = (artwork, bounds = defaultBounds) => {
+    const fillId = `badge-logo-fill-${styleName}`;
+    const strokeId = `badge-logo-stroke-grad-${styleName}`;
+    const stroke = gradStrokeActive
+      ? `<defs>${buildTextGradient(strokeId, outlineGradient, bounds)}</defs>` +
+        buildGradStrokeLayer({ maskId: `badge-logo-stroke-mask-${styleName}`, silFilterId: `badge-logo-stroke-sil-${styleName}`, gradId: strokeId, width, height, logoCopy: artwork })
+      : '';
+    const fill = logoGradient ? buildLogoPaint(artwork, fillId, bounds, width, height, logoGradient) : artwork;
+    return stroke + `<g${logoFilterAttr}>${fill}</g>`;
+  };
+
 
   if (showDisk && !noLogo) {
     const diskR = diskDiameter * logoScale / 2;
@@ -1408,7 +1478,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
       pendingIcon = {
         slot: '<!-- PRESET_ICON_SLOT -->',
         placeholder: '',
-        request: loadOfficialLogo(presetKey, styleName).then(({ source, viewport }) => {
+        request: loadOfficialLogo(presetKey, styleName).then(({ source, viewport, bounds }) => {
           const position = iconPosition(
             iconX + (viewport.x - layout.left) * scale,
             height / 2 + (viewport.y - height / 2) * scale,
@@ -1416,7 +1486,11 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
             viewport.height * scale
           );
           const image = `<image ${position} href="${source}"/>`;
-          return gradStrokeLayer(image) + `<g${logoFilterAttr}>${image}</g>`;
+          return paintLogo(image, {
+            x: iconX + (bounds.x - layout.left) * scale,
+            y: height / 2 + (bounds.y - height / 2) * scale,
+            width: bounds.width * scale, height: bounds.height * scale
+          });
         })
       };
       svgMarkup += pendingIcon.slot;
@@ -1427,13 +1501,13 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
         : `<path fill="${showDisk ? logoColor : icon.color}" d="${icon.path}"/>`;
       const boxSize = icon.isCustomSvg ? 64 : 24;
       const logo = `<svg ${defaultPosition} viewBox="0 0 ${boxSize} ${boxSize}">${artwork}</svg>`;
-      svgMarkup += gradStrokeLayer(logo) + `<g${logoFilterAttr}>${logo}</g>`;
+      svgMarkup += paintLogo(logo);
     }
   } else if (!noLogo && (state.iconMode === 'upload' || state.iconMode === 'raw')) {
     const source = state.iconMode === 'upload' ? state.uploadedDataUrl : state.rawSvgDataUrl;
     if (source) {
       const image = `<image href="${escapeHtml(source)}" ${defaultPosition}/>`;
-      svgMarkup += gradStrokeLayer(image) + `  <g${logoFilterAttr}>${image}</g>\n`;
+      svgMarkup += paintLogo(image);
     }
   } else if (!noLogo && ['fontawesome', 'thesvg'].includes(state.iconMode)) {
     const isFa = state.iconMode === 'fontawesome';
@@ -1448,7 +1522,7 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
         const image = isFa
           ? `<svg ${defaultPosition} viewBox="${escapeHtml(icon.viewBox)}" fill="${fillColor}"><path d="${escapeHtml(icon.pathData)}"/></svg>`
           : `<image ${defaultPosition} href="${icon}"/>`;
-        return gradStrokeLayer(image) + `<g${logoFilterAttr}>${image}</g>`;
+        return paintLogo(image);
       })
     };
     svgMarkup += `  ${slot}\n`;
@@ -1460,12 +1534,16 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
       : '';
     const inlineScale = inline && textNaturalWidth > availableTextWidth + 0.5
       ? Math.max(0.01, (availableTextWidth - labelGap) / (subtitleAdvance + titleAdvance)) : 1;
+    const align = alignment === 'template' ? (noLogo ? 'center' : 'left') : alignment;
+    const alignedOffset = space => align === 'right' ? space : align === 'center' ? space / 2 : 0;
+    const inlineWidth = (subtitleAdvance + titleAdvance) * inlineScale + labelGap;
+    const lineStart = textX + (inline ? alignedOffset(Math.max(0, availableTextWidth - inlineWidth)) : 0);
     const line = (value, measured, x, y, size, weight, color, gradient, id) => {
       if (!value) return '';
       const available = inline ? measured * inlineScale : availableTextWidth;
       const fit = measured > available + 0.5;
       const visibleWidth = fit ? available : measured;
-      const left = noLogo && !inline ? (width - visibleWidth) / 2 : x;
+      const left = inline ? x : x + alignedOffset(Math.max(0, availableTextWidth - visibleWidth));
       const length = fit ? ` textLength="${svgNumber(visibleWidth)}" lengthAdjust="spacingAndGlyphs"` : '';
       if (gradient) {
         const bounds = badgeTextBounds(value, left, y, size, weight, visibleWidth);
@@ -1474,8 +1552,8 @@ ${bgStops.map((hex, i) => `      <stop offset="${(i / (bgStops.length - 1)).toFi
       const fill = gradient ? `url(#${id})` : color;
       return `  <text x="${svgNumber(left)}" y="${y}" fill="${fill}"${textStrokeAttr} font-family="${BADGE_FONT}, sans-serif" font-size="${size}" font-weight="${weight}"${length}>${escapeHtml(value)}</text>\n`;
     };
-    const titleX = inline ? textX + subtitleAdvance * inlineScale + labelGap : textX;
-    const subtitle = line(topText, topMeasured, textX, layout.subtitleY, subtitleSize,
+    const titleX = inline ? lineStart + subtitleAdvance * inlineScale + labelGap : textX;
+    const subtitle = line(topText, topMeasured, lineStart, layout.subtitleY, subtitleSize,
       BADGE_SUBTITLE_WEIGHT, subtitleColor, subtitleGradient, `badge-subtitle-grad-${styleName}`);
     const title = line(bottomText, bottomMeasured, titleX, layout.titleY, titleSize,
       BADGE_TITLE_WEIGHT, textColor, titleGradient, `badge-text-grad-${styleName}`);
@@ -1612,16 +1690,17 @@ function showToast(message, type = 'success', duration = 2200) {
 
 // Config field names stay compatible with existing Badgeworks exports.
 const CONFIG_FIELDS = {
+  textAlignment: 'text-alignment', logoGap: 'logo-gap', borderMode: 'border-mode', borderColor: 'border-color',
+  borderWidth: 'border-width', borderOpacity: 'border-opacity',
   topText: 'top-text', bottomText: 'bottom-text', presetKey: 'preset-select',
   faPack: 'fa-pack-select', faIconName: 'fa-icon-name',
   thesvgSlug: 'thesvg-slug', thesvgVariant: 'thesvg-variant-select',
   showDisk: 'show-disk-toggle', diskColor: 'disk-color', logoColor: 'logo-color',
   textColor: 'text-color', radius: 'corner-radius', paddingRight: 'padding-horizontal',
   diskDiameter: 'disk-size-slider', userLogoScale: 'icon-scale-slider',
-  useCustomLogoColor: 'custom-logo-color-toggle', useLogoStroke: 'logo-stroke-toggle',
+  useCustomLogoColor: 'custom-logo-color-toggle', useLogoGrad: 'logo-grad-toggle', useLogoStroke: 'logo-stroke-toggle',
   logoStrokeColor: 'logo-stroke-color', logoStrokeWidth: 'logo-stroke-width',
-  useLogoStrokeGrad: 'logo-stroke-grad-toggle', logoStrokeGradTop: 'logo-stroke-grad-top',
-  logoStrokeGradBot: 'logo-stroke-grad-bot', useLogoShadow: 'logo-shadow-toggle',
+  useLogoStrokeGrad: 'logo-stroke-grad-toggle', useLogoShadow: 'logo-shadow-toggle',
   logoShadowColor: 'logo-shadow-color', logoShadowBlur: 'logo-shadow-blur',
   useTextGrad: 'text-grad-toggle', useSubtitleGrad: 'subtitle-grad-toggle',
   useTextStroke: 'text-stroke-toggle', textStrokeColor: 'text-stroke-color',
@@ -1638,7 +1717,7 @@ const LOGO_POSITIONS = ['left', 'right', 'none'];
 const isHexColor = value => typeof value === 'string' && /^#[a-f\d]{6}$/i.test(value);
 
 function getBadgeConfig() {
-  const config = { version: '3.2' };
+  const config = { version: '3.3' };
   for (const key of CONFIG_STATE) config[key] = state[key];
   for (const [key, id] of Object.entries(CONFIG_FIELDS)) {
     const input = document.getElementById(id);
@@ -1649,6 +1728,11 @@ function getBadgeConfig() {
 }
 
 function applyBadgeConfig(config, render = true) {
+  config = {
+    textAlignment: 'template', logoGap: '', borderMode: 'template',
+    borderColor: '#ffffff', borderWidth: '2.1', borderOpacity: '100',
+    ...config
+  };
   uploadRevision++;
   state.officialBadge = Object.hasOwn(DEVINS_BADGES, config.officialBadge) ? config.officialBadge : '';
   state.customizedBadge = Object.hasOwn(DEVINS_BADGES, config.customizedBadge) && Array.isArray(config.customizedBaseline?.bgStops)
@@ -1711,7 +1795,7 @@ function applyBadgeConfig(config, render = true) {
 
 function isValidBadgeConfig(config) {
   return config && typeof config === 'object' && !Array.isArray(config)
-    && [...CONFIG_STATE, ...Object.keys(CONFIG_FIELDS), 'faIconInput', 'bgColorTop', 'bgColorBottom', 'textGradTop', 'textGradBot']
+    && [...CONFIG_STATE, ...Object.keys(CONFIG_FIELDS), 'faIconInput', 'bgColorTop', 'bgColorBottom', 'textGradTop', 'textGradBot', 'logoStrokeGradTop', 'logoStrokeGradBot']
       .some(key => Object.hasOwn(config, key));
 }
 
